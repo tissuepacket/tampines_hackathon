@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bike Patrol Rewards</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">🚴 BikePatrol</div>
+        <div class="user-info">
+          <div class="user-avatar">BP</div>
+          <div class="user-name">Admin</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="dashboard">
+          <span class="nav-icon">📊</span>
+          Dashboard
+        </button>
+        <button class="nav-item" data-tab="reports">
+          <span class="nav-icon">📋</span>
+          Reports
+        </button>
+        <button class="nav-item" data-tab="inspect">
+          <span class="nav-icon">🔍</span>
+          AI Inspect
+        </button>
+        <button class="nav-item" data-tab="rewards">
+          <span class="nav-icon">🏆</span>
+          Rewards
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="search-bar">
+          <input type="text" placeholder="Search reports..." />
+        </div>
+        <div class="header-actions">
+          <button class="btn-export" id="download-reports-btn">⬇ Download Reports</button>
+          <button class="btn-add-shipment" id="create-maintenance-btn">🔧 Create Maintenance Request</button>
+        </div>
+      </header>
+
+      <!-- Dashboard Tab -->
+      <div id="dashboard" class="tab-content active">
+        <section class="dashboard-section">
+          <h1>Bike Patrol Dashboard</h1>
+          <p class="subtitle">Monitor reports, inspections, and rewards in real-time</p>
+
+          <!-- Key Metrics -->
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-value" id="total-reports">0</div>
+              <div class="metric-label">Total Reports</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-value" id="reward-limit">3</div>
+              <div class="metric-label">Daily Reward Limit</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-value" id="total-vouchers">0</div>
+              <div class="metric-label">Vouchers Claimed</div>
+            </div>
+          </div>
+
+          <!-- Status Overview -->
+          <div class="overview-section">
+            <h2>Report Status Overview</h2>
+            <div class="status-row">
+              <div class="status-badge">Bike Reports <span class="count" id="status-reports">0</span></div>
+              <div class="status-badge">Inspections Done <span class="count" id="status-inspections">0</span></div>
+              <div class="status-badge">Rewards Claimed <span class="count" id="status-rewards">0</span></div>
+            </div>
+          </div>
+
+          <!-- Recent Reports Table -->
+          <div class="reports-table-section">
+            <h2>Recent Reports</h2>
+            <div class="table-container">
+              <table class="reports-table">
+                <thead>
+                  <tr>
+                    <th>Report ID</th>
+                    <th>Reporter</th>
+                    <th>Bike ID</th>
+                    <th>Issue Type</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="reports-tbody">
+                  <tr><td colspan="6" style="text-align: center; padding: 20px;">No reports yet</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Reports Tab -->
+      <div id="reports" class="tab-content">
+        <section class="reports-section">
+          <h1>Submit Report</h1>
+          <div class="form-container">
+            <form id="report-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Your name or email *</label>
+                  <input type="text" id="reporter" required placeholder="e.g. jane@example.com" />
+                </div>
+                <div class="form-group">
+                  <label>Bike ID *</label>
+                  <input type="text" id="bike-id" required placeholder="e.g. BK-101" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Issue type *</label>
+                  <select id="issue-type">
+                    <option value="illegal_parking">Illegal parking</option>
+                    <option value="toppled">Toppled bike</option>
+                    <option value="faulty">Faulty bike</option>
+                    <option value="general">General issue</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Description *</label>
+                  <textarea id="description" rows="3" placeholder="Describe what you saw"></textarea>
+                </div>
+              </div>
+
+              <div class="form-group checkbox-group">
+                <label><input type="checkbox" id="outside-zone" /> Outside parking zone</label>
+                <label><input type="checkbox" id="toppled" /> Bike toppled</label>
+                <label><input type="checkbox" id="faulty" /> Faulty bike</label>
+              </div>
+
+              <button type="submit" class="btn-primary">Send report</button>
+            </form>
+            <div id="report-message" class="message-box"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Inspect Tab -->
+      <div id="inspect" class="tab-content">
+        <section class="inspect-section">
+          <h1>AI-Style Inspection</h1>
+          <p class="subtitle">Upload an image for AI-powered bike analysis</p>
+
+          <div class="form-container">
+            <form id="ai-check-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Upload image *</label>
+                  <input type="file" id="inspection-image" accept="image/*" required />
+                </div>
+                <div class="form-group">
+                  <label>Bike ID</label>
+                  <input type="text" id="inspect-bike-id" placeholder="e.g. BK-101" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>LLM Token (placeholder)</label>
+                  <input type="text" id="llm-token" placeholder="PLACEHOLDER_LLM_TOKEN" />
+                </div>
+              </div>
+
+              <div class="form-group checkbox-group">
+                <label><input type="checkbox" id="inspect-outside-zone" /> Outside parking zone</label>
+                <label><input type="checkbox" id="inspect-toppled" /> Bike toppled</label>
+                <label><input type="checkbox" id="inspect-faulty" /> Faulty bike</label>
+              </div>
+
+              <button type="button" id="ai-check-btn" class="btn-primary">Run AI inspection</button>
+            </form>
+            <div id="inspection-message" class="message-box"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Rewards Tab -->
+      <div id="rewards" class="tab-content">
+        <section class="rewards-section">
+          <h1>Claim Rewards</h1>
+          <p class="subtitle">Redeem your CDC vouchers for reporting and participation</p>
+
+          <div class="rewards-container">
+            <div class="form-container">
+              <form id="reward-form">
+                <div class="form-group">
+                  <label>Your name or email *</label>
+                  <input type="text" id="reward-user" required placeholder="e.g. jane@example.com" />
+                </div>
+                <button type="button" id="claim-reward-btn" class="btn-primary">Claim CDC Voucher</button>
+              </form>
+              <div id="reward-status" class="message-box"></div>
+            </div>
+
+            <!-- Available Vouchers -->
+            <div class="vouchers-display">
+              <h3>Available Vouchers</h3>
+              <div class="voucher-list">
+                <div class="voucher-item">🍔 CDC Food Voucher</div>
+                <div class="voucher-item">🛍️ CDC Shopping Discount</div>
+                <div class="voucher-item">🚌 CDC Transport Subsidy</div>
+                <div class="voucher-item">🔧 CDC Bike Care Coupon</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API_BASE = 'http://127.0.0.1:8000';
+
+    // Tab Navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        
+        e.target.closest('.nav-item').classList.add('active');
+        const tabName = e.target.closest('.nav-item').dataset.tab;
+        document.getElementById(tabName)?.classList.add('active');
+      });
+    });
+
+    // Load initial data
+    async function loadDashboard() {
+      const res = await fetch(`${API_BASE}/api/status`);
+      const data = await res.json();
+      document.getElementById('total-reports').textContent = data.report_count;
+      document.getElementById('reward-limit').textContent = data.reward_limit_per_day;
+      document.getElementById("total-vouchers").textContent = data.report_count || 0;
+      document.getElementById("status-reports").textContent = data.report_count || 0;
+      
+      loadReports();
+    }
+
+    async function loadReports() {
+      const res = await fetch(`${API_BASE}/api/reports`);
+      const data = await res.json();
+      const tbody = document.getElementById('reports-tbody');
+      
+      if (!data.total_reports) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No reports yet</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.recent_reports.map((r, i) => `
+        <tr>
+          <td>#${i + 1000}</td>
+          <td>${r.reporter}</td>
+          <td>${r.bike_id}</td>
+          <td><span class="badge">${r.issue_type.replace('_', ' ')}</span></td>
+          <td>${r.description}</td>
+          <td><span class="status-ok">●</span> Received</td>
+        </tr>
+      `).join('');
+    }
+
+    // Report form
+    document.getElementById('report-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        reporter: document.getElementById('reporter').value.trim(),
+        bike_id: document.getElementById('bike-id').value.trim(),
+        issue_type: document.getElementById('issue-type').value,
+        description: document.getElementById('description').value.trim(),
+        outside_zone: document.getElementById('outside-zone').checked,
+        toppled: document.getElementById('toppled').checked,
+        faulty: document.getElementById('faulty').checked,
+      };
+
+      const res = await fetch(`${API_BASE}/api/reports`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      document.getElementById('report-message').innerHTML = `<strong>✓ ${data.message}</strong>`;
+      document.getElementById('report-form').reset();
+      loadReports();
+    });
+
+    // AI Check
+    document.getElementById('ai-check-btn').addEventListener('click', async () => {
+      const imageInput = document.getElementById('inspection-image');
+      if (!imageInput.files.length) {
+        document.getElementById('inspection-message').innerHTML = '<strong>⚠ Please upload an image first.</strong>';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('image', imageInput.files[0]);
+      formData.append('bike_id', document.getElementById('inspect-bike-id').value.trim() || 'BK-000');
+      formData.append('outside_zone', document.getElementById('inspect-outside-zone').checked ? 'true' : 'false');
+      formData.append('toppled', document.getElementById('inspect-toppled').checked ? 'true' : 'false');
+      formData.append('faulty', document.getElementById('inspect-faulty').checked ? 'true' : 'false');
+      formData.append('llm_token', document.getElementById('llm-token').value.trim() || 'PLACEHOLDER_LLM_TOKEN');
+
+      const res = await fetch(`${API_BASE}/api/ai-check`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      document.getElementById('inspection-message').innerHTML = `
+        <strong>✓ AI Inspection Complete</strong><br>
+        ${data.issues.map(i => `• ${i}`).join('<br>')}
+      `;
+    });
+
+    // Rewards
+    document.getElementById('claim-reward-btn').addEventListener('click', async () => {
+      const user = document.getElementById('reward-user').value.trim();
+      if (!user) {
+        document.getElementById('reward-status').innerHTML = '<strong>⚠ Enter a user name or email.</strong>';
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/claim-reward`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user, action: 'claim' }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        document.getElementById('reward-status').innerHTML = `<strong>⚠ ${data.detail}</strong>`;
+        return;
+      }
+
+      document.getElementById('reward-status').innerHTML = `
+        <strong>✓ ${data.message}</strong><br>
+        You received: <em>${data.voucher}</em><br>
+        Claims today: ${data.claimed_today}/${data.limit}
+      `;
+    });
+
+    // Download reports
+    document.getElementById('download-reports-btn').addEventListener('click', () => {
+      alert('Report download feature coming soon!');
+    });
+
+    // Create maintenance request
+    document.getElementById('create-maintenance-btn').addEventListener('click', () => {
+      alert('Maintenance request feature coming soon!');
+    });
+
+        // Initialize
+    loadDashboard();
+  </script>
+</body>
+</html>
