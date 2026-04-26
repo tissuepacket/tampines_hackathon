@@ -10,7 +10,7 @@ This repository is split into two folders:
 1. Activate the Python virtual environment:
 
 ```bash
-cd /Users/tissuepacket/first_hackathon/tampines_hackathon
+cd tampines_hackathon
 source .venv/bin/activate
 ```
 
@@ -27,6 +27,20 @@ cd backend
 uvicorn app:app --reload --host 127.0.0.1 --port 8000
 ```
 
+## Proxy account setup
+
+The repo includes `.env.example` with dummy proxy credentials. Copy it to `.env` in the repository root and keep `.env` private.
+
+```bash
+cp .env.example .env
+```
+
+Then use one of these sample accounts in the sidebar login:
+
+- `admin@bikepatrol.test` / `admin123`
+- `maintenance@bikepatrol.test` / `maint123`
+- `user@bikepatrol.test` / `user123`
+
 ## Run the frontend
 
 install npm
@@ -34,7 +48,7 @@ install npm
 1. Install frontend dependencies once:
 
 ```bash
-cd /Users/tissuepacket/first_hackathon/tampines_hackathon/frontend
+cd tampines_hackathon/frontend
 npm install
 ```
 

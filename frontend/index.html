@@ -7,17 +7,143 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
+  <div class="login-screen" id="login-screen">
+    <div class="login-screen-panel">
+      <div class="login-screen-illustration">
+        <div class="illustration-title">
+          <span>BikePatrol</span>
+          <h2>Ready to ride?</h2>
+          <p>Securely access your patrol dashboard and keep bike reporting moving.</p>
+        </div>
+        <svg class="bike-illustration" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+          <!-- Sky gradient background -->
+          <defs>
+            <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
+              <stop offset="40%" style="stop-color:#334155;stop-opacity:1" />
+              <stop offset="70%" style="stop-color:#f97316;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:0.8" />
+            </linearGradient>
+          </defs>
+          <rect width="400" height="300" fill="url(#skyGradient)"/>
+          
+          <!-- Sun -->
+          <circle cx="320" cy="80" r="45" fill="#fbbf24" opacity="0.9"/>
+          <circle cx="320" cy="80" r="42" fill="#f59e0b"/>
+          
+          <!-- Ground/Park -->
+          <ellipse cx="200" cy="280" rx="200" ry="40" fill="#15803d" opacity="0.8"/>
+          <path d="M 0 240 Q 100 200 200 220 T 400 240 L 400 300 L 0 300 Z" fill="#166534"/>
+          
+          <!-- Background trees -->
+          <circle cx="60" cy="200" r="35" fill="#065f46" opacity="0.6"/>
+          <circle cx="340" cy="210" r="40" fill="#065f46" opacity="0.6"/>
+          
+          <!-- Bike wheels -->
+          <circle cx="140" cy="240" r="28" fill="none" stroke="#1f2937" stroke-width="3"/>
+          <circle cx="140" cy="240" r="24" fill="none" stroke="#1f2937" stroke-width="1.5" opacity="0.5"/>
+          <circle cx="260" cy="240" r="28" fill="none" stroke="#1f2937" stroke-width="3"/>
+          <circle cx="260" cy="240" r="24" fill="none" stroke="#1f2937" stroke-width="1.5" opacity="0.5"/>
+          
+          <!-- Bike frame -->
+          <line x1="140" y1="240" x2="200" y2="180" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
+          <line x1="200" y1="180" x2="260" y2="240" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
+          <line x1="140" y1="240" x2="260" y2="240" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
+          <line x1="200" y1="180" x2="200" y2="210" stroke="#1f2937" stroke-width="3" stroke-linecap="round"/>
+          
+          <!-- Bike seat -->
+          <ellipse cx="200" cy="175" rx="16" ry="6" fill="#1f2937"/>
+          
+          <!-- Bike handlebar -->
+          <line x1="140" y1="220" x2="120" y2="210" stroke="#1f2937" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="120" cy="210" r="4" fill="#1f2937"/>
+          
+          <!-- Rider head -->
+          <circle cx="195" cy="145" r="14" fill="#d97706" stroke="#b45309" stroke-width="1"/>
+          
+          <!-- Rider torso -->
+          <rect x="188" y="160" width="14" height="35" rx="3" fill="#dc2626"/>
+          
+          <!-- Rider arms -->
+          <line x1="195" y1="165" x2="170" y2="170" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
+          <line x1="195" y1="165" x2="125" y2="205" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
+          
+          <!-- Rider legs -->
+          <line x1="195" y1="195" x2="170" y2="235" stroke="#1f2937" stroke-width="3" stroke-linecap="round"/>
+          <line x1="195" y1="195" x2="240" y2="232" stroke="#1f2937" stroke-width="3" stroke-linecap="round"/>
+          
+          <!-- Rider backpack -->
+          <rect x="188" y="158" width="18" height="22" rx="3" fill="#991b1b" opacity="0.7"/>
+        </svg>
+      </div>
+      <div class="login-screen-card">
+        <div class="login-screen-header login-screen-header-compact">
+          <div class="brand-icon">✦</div>
+          <h1>Welcome back!</h1>
+          <p>Please enter your details</p>
+        </div>
+        <div class="login-screen-form">
+          <label>Email</label>
+          <input type="text" id="login-screen-email" placeholder="Enter your email" autocomplete="username" />
+          <label>Password</label>
+          <div class="password-input-wrapper">
+            <input type="password" id="login-screen-password" placeholder="Enter your password" autocomplete="current-password" />
+            <button type="button" id="password-toggle-btn" class="password-toggle-btn" aria-label="Show password">⊘</button>
+          </div>
+          <div id="login-error-msg" class="login-error hidden"></div>
+          <button type="button" id="login-screen-btn" class="btn-primary">Log In</button>
+          <div class="login-form-footer">
+            <span>Don't have an account?</span>
+            <button type="button" id="register-screen-btn" class="link-button">Sign up</button>
+          </div>
+
+          <div id="register-screen-panel" class="register-panel hidden">
+            <label>Register email</label>
+            <input type="text" id="register-email" placeholder="Enter your email" autocomplete="email" />
+            <label>Register password</label>
+            <input type="password" id="register-password" placeholder="Enter your password" autocomplete="new-password" />
+            <label>Confirm password</label>
+            <input type="password" id="register-confirm-password" placeholder="Confirm your password" autocomplete="new-password" />
+            <button type="button" id="create-account-btn" class="btn-primary">Create account</button>
+          </div>
+
+          <div id="login-screen-status" class="message-box"></div>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="layout">
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="logo">🚴 BikePatrol</div>
         <div class="user-info">
-          <div class="user-avatar">BP</div>
-          <div class="user-name">Admin</div>
+          <div class="user-avatar" id="sidebar-profile-avatar" title="Click to update profile photo">BP</div>
+          <div class="user-details">
+            <div class="user-name" id="sidebar-user-name">Guest</div>
+            <div class="user-role" id="sidebar-user-role">Not signed in</div>
+          </div>
+        </div>
+        <input type="file" id="profile-photo-input" accept="image/*" style="display:none" />
+      </div>
+      <div class="photo-editor-modal" id="photo-editor-modal" aria-hidden="true">
+        <div class="photo-editor-backdrop"></div>
+        <div class="photo-editor-panel" role="dialog" aria-modal="true" aria-labelledby="photo-editor-title">
+          <h2 id="photo-editor-title">Adjust profile picture</h2>
+          <p class="photo-editor-desc">Drag the image to position it, then use zoom to fit inside the circle.</p>
+          <div class="photo-editor-preview" id="photo-editor-preview">
+            <img id="photo-editor-image" alt="Profile preview" />
+            <div class="crop-mask"></div>
+            <div class="crop-ring"></div>
+          </div>
+          <label class="slider-label">Zoom</label>
+          <input type="range" id="photo-editor-zoom" min="0.8" max="2.2" step="0.05" value="1" />
+          <div class="photo-editor-actions">
+            <button type="button" class="btn-secondary" id="photo-editor-cancel">Cancel</button>
+            <button type="button" class="btn-primary" id="photo-editor-save">Save photo</button>
+          </div>
         </div>
       </div>
-
       <nav class="sidebar-nav">
         <button class="nav-item active" data-tab="dashboard">
           <span class="nav-icon">📊</span>
@@ -35,7 +161,32 @@
           <span class="nav-icon">🏆</span>
           Rewards
         </button>
+        <button class="nav-item" data-tab="account">
+          <span class="nav-icon">⚙️</span>
+          Account
+        </button>
       </nav>
+      <div class="sidebar-footer">
+        <button class="sidebar-account-btn" id="sidebar-account-btn" aria-label="Open account panel">
+          <span>👤 Manage account</span>
+        </button>
+        <button type="button" id="sidebar-logout-fixed" class="btn-secondary sidebar-logout-fixed hidden">Logout</button>
+        <div class="sidebar-account-panel" id="sidebar-account-panel" aria-hidden="true">
+          <div class="sidebar-login-row">
+            <label>Email</label>
+            <input type="text" id="sidebar-login-user" placeholder="e.g. admin@bikepatrol.test" />
+          </div>
+          <div class="sidebar-login-row">
+            <label>Password</label>
+            <input type="password" id="sidebar-login-password" placeholder="Proxy password" />
+          </div>
+          <div class="sidebar-button-row">
+            <button type="button" id="sidebar-login-btn" class="btn-primary">Login</button>
+            <button type="button" id="sidebar-logout-btn" class="btn-secondary">Logout</button>
+          </div>
+          <div id="sidebar-login-status" class="message-box"></div>
+        </div>
+      </div>
     </aside>
 
     <!-- Main Content -->
@@ -56,6 +207,17 @@
         <section class="dashboard-section">
           <h1>Bike Patrol Dashboard</h1>
           <p class="subtitle">Monitor reports, inspections, and rewards in real-time</p>
+
+          <div class="welcome-card">
+            <div>
+              <h2>Welcome back!</h2>
+              <p>Quickly review the latest bike reports, claim rewards, and manage your account from one friendly dashboard.</p>
+            </div>
+            <div class="welcome-actions">
+              <button class="btn-primary">Get started</button>
+              <button class="btn-secondary">See insights</button>
+            </div>
+          </div>
 
           <!-- Key Metrics -->
           <div class="metrics-grid">
@@ -208,6 +370,28 @@
                 <button type="button" id="claim-reward-btn" class="btn-primary">Claim CDC Voucher</button>
               </form>
               <div id="reward-status" class="message-box"></div>
+
+              <div class="account-box">
+                <h3>Account & Parking Rewards</h3>
+                <form id="account-form">
+                  <div class="form-group">
+                    <label>Lookup user account *</label>
+                    <input type="text" id="account-user" required placeholder="e.g. jane@example.com" />
+                  </div>
+                  <button type="submit" class="btn-secondary">Load account history</button>
+                </form>
+                <div class="form-group">
+                  <label>Bike ID for parking help</label>
+                  <input type="text" id="parking-bike-id" placeholder="e.g. BK-101" />
+                </div>
+                <div class="form-group">
+                  <label>Notes (optional)</label>
+                  <input type="text" id="parking-notes" placeholder="Helped rearrange the bike inside the spot" />
+                </div>
+                <button type="button" id="parking-help-btn" class="btn-secondary">Log parking help</button>
+                <button type="button" id="redeem-parking-btn" class="btn-secondary">Redeem 1 parking point</button>
+                <div id="account-summary" class="message-box"></div>
+              </div>
             </div>
 
             <!-- Available Vouchers -->
@@ -223,11 +407,448 @@
           </div>
         </section>
       </div>
+
+      <!-- Account Tab -->
+      <div id="account" class="tab-content">
+        <section class="account-section">
+          <h1>Account Settings</h1>
+          <p class="subtitle">Manage your profile, password, display preferences, and theme.</p>
+
+          <div class="account-panel">
+            <div class="account-panel-header">
+              <div class="profile-photo-preview" id="profile-photo-preview">BP</div>
+              <div class="account-meta">
+                <div class="account-role-summary">
+                  <strong>Role:</strong> <span id="profile-role">None</span>
+                </div>
+                <button type="button" class="btn-secondary" id="profile-photo-change-btn">Change profile photo</button>
+              </div>
+            </div>
+
+            <div class="account-tab-nav" role="tablist">
+              <button class="account-tab-item active" data-account-tab="profile-subtab" type="button">Profile</button>
+              <button class="account-tab-item" data-account-tab="appearance-subtab" type="button">Appearance</button>
+              <button class="account-tab-item" data-account-tab="security-subtab" type="button">Security</button>
+            </div>
+
+            <div class="account-tab-content active" id="profile-subtab">
+              <div class="form-container">
+                <div class="form-group">
+                  <label>Display name</label>
+                  <input type="text" id="settings-display-name" placeholder="Your name" />
+                </div>
+                <div class="form-group">
+                  <label>Email</label>
+                  <input type="text" id="profile-email" disabled value="Not signed in" />
+                </div>
+              </div>
+            </div>
+
+            <div class="account-tab-content" id="appearance-subtab">
+              <div class="form-container">
+                <h2>Appearance</h2>
+                <div class="form-group">
+                  <label>Theme</label>
+                  <select id="settings-theme">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Font size</label>
+                  <select id="settings-font-size">
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                  </select>
+                </div>
+                <button type="button" id="save-settings-btn" class="btn-primary">Save settings</button>
+                <div id="settings-status" class="message-box"></div>
+              </div>
+            </div>
+
+            <div class="account-tab-content" id="security-subtab">
+              <div class="form-container">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Current password</label>
+                    <input type="password" id="password-current" placeholder="Current password" />
+                  </div>
+                  <div class="form-group">
+                    <label>New password</label>
+                    <input type="password" id="password-new" placeholder="New password" />
+                  </div>
+                </div>
+                <button type="button" id="change-password-btn" class="btn-secondary">Change password</button>
+                <div id="password-status" class="message-box"></div>
+
+                <hr />
+
+                <div class="form-group">
+                  <label>Forgot password? Enter your email</label>
+                  <input type="text" id="reset-email" placeholder="e.g. admin@bikepatrol.test" />
+                </div>
+                <div class="form-group">
+                  <label>New password</label>
+                  <input type="password" id="reset-password" placeholder="New password" />
+                </div>
+                <button type="button" id="reset-password-btn" class="btn-secondary">Reset password</button>
+                <div id="reset-status" class="message-box"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
   </div>
 
   <script>
     const API_BASE = 'http://127.0.0.1:8000';
+    const AUTH_SESSION_KEY = 'bikepatrol_session';
+    const GUEST_MODE_KEY = 'bikepatrol_guest';
+    let currentSession = null;
+    let isGuestMode = false;
+    let cropScale = 1;
+    let cropOffset = { x: 0, y: 0 };
+    let cropDragging = false;
+    let cropDragStart = { x: 0, y: 0 };
+    let cropPointerStart = { x: 0, y: 0 };
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function showLoginScreen() {
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.body.classList.add('login-active');
+    }
+
+    function hideLoginScreen() {
+      document.getElementById('login-screen').classList.add('hidden');
+      document.body.classList.remove('login-active');
+    }
+
+    function setGuestMode() {
+      isGuestMode = true;
+      localStorage.setItem(GUEST_MODE_KEY, 'true');
+      hideLoginScreen();
+    }
+
+    function showLoginError(message) {
+      const error = document.getElementById('login-error-msg');
+      error.textContent = message;
+      error.classList.remove('hidden');
+      const emailField = document.getElementById('login-screen-email');
+      const passwordWrapper = document.querySelector('.password-input-wrapper');
+      [emailField, passwordWrapper].forEach((el) => {
+        el.classList.remove('shake');
+        void el.offsetWidth;
+        el.classList.add('shake');
+      });
+    }
+
+    function clearLoginError() {
+      const error = document.getElementById('login-error-msg');
+      error.textContent = '';
+      error.classList.add('hidden');
+    }
+
+    function resetLoginForm() {
+      document.getElementById('login-screen-email').value = '';
+      const passwordInput = document.getElementById('login-screen-password');
+      passwordInput.value = '';
+      passwordInput.type = 'password';
+      document.getElementById('password-toggle-btn').textContent = '⊘';
+      document.getElementById('register-email').value = '';
+      document.getElementById('register-password').value = '';
+      document.getElementById('register-confirm-password').value = '';
+      document.getElementById('register-screen-panel').classList.add('hidden');
+      document.getElementById('register-screen-btn').textContent = 'Sign up';
+      clearLoginError();
+      document.getElementById('login-screen-status').innerHTML = '';
+      document.querySelectorAll('.shake').forEach((el) => el.classList.remove('shake'));
+    }
+
+    function toggleRegisterPanel() {
+      const panel = document.getElementById('register-screen-panel');
+      const toggleBtn = document.getElementById('register-screen-btn');
+      const visible = panel.classList.contains('hidden');
+      panel.classList.toggle('hidden');
+      toggleBtn.textContent = visible ? 'Back to sign in' : 'Sign up';
+      clearLoginError();
+      document.getElementById('login-screen-status').innerHTML = '';
+    }
+
+    async function registerAccount() {
+      const user = document.getElementById('register-email').value.trim();
+      const password = document.getElementById('register-password').value;
+      const confirmPassword = document.getElementById('register-confirm-password').value;
+      if (!user || !password || !confirmPassword) {
+        showLoginError('Enter email and password to register.');
+        return false;
+      }
+      if (password !== confirmPassword) {
+        showLoginError('Passwords do not match.');
+        return false;
+      }
+      const res = await fetch(`${API_BASE}/api/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showLoginError(data.detail || 'Registration failed.');
+        return false;
+      }
+      setSession(data.token, data.user, data.role, data.account);
+      document.getElementById('account-user').value = data.user;
+      document.getElementById('reward-user').value = data.user;
+      document.getElementById('account-summary').innerHTML = `<strong>Logged in as ${data.account.display_name} (${data.role}).</strong>`;
+      updateUserHeader(data.account);
+      hideLoginScreen();
+      document.getElementById('register-screen-panel').classList.add('hidden');
+      document.getElementById('register-screen-btn').textContent = 'Register new account';
+      document.getElementById('login-screen-status').innerHTML = '<strong>✓ Account created and signed in.</strong>';
+      clearLoginError();
+      return true;
+    }
+
+    async function handleLogin(user, password) {
+      clearLoginError();
+      if (!user || !password) {
+        showLoginError('Enter email and password.');
+        return false;
+      }
+      const res = await fetch(`${API_BASE}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showLoginError(data.detail || 'Invalid username or password.');
+        return false;
+      }
+      setSession(data.token, data.user, data.role, data.account);
+      document.getElementById('account-user').value = data.user;
+      document.getElementById('reward-user').value = data.user;
+      document.getElementById('account-summary').innerHTML = `<strong>Logged in as ${data.account.display_name} (${data.role}).</strong>`;
+      updateUserHeader(data.account);
+      hideLoginScreen();
+      document.getElementById('sidebar-account-btn').classList.add('hidden');
+      return true;
+    }
+
+    function setSession(token, user, role, account = null) {
+      currentSession = { token, user, role };
+      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(currentSession));
+      localStorage.removeItem(GUEST_MODE_KEY);
+      document.getElementById('sidebar-login-user').value = user;
+      document.getElementById('sidebar-login-password').value = '';
+      document.getElementById('sidebar-account-btn').classList.add('hidden');
+      document.getElementById('sidebar-logout-fixed').classList.remove('hidden');
+      document.getElementById('sidebar-logout-btn').classList.remove('hidden');
+      if (account) {
+        document.getElementById('sidebar-login-status').innerHTML = `Logged in as <strong>${account.display_name}</strong> (${role}).`;
+        updateUserHeader(account);
+      } else {
+        document.getElementById('sidebar-login-status').innerHTML = `Logged in as <strong>${user}</strong> (${role}).`;
+      }
+    }
+
+    function openPhotoEditor(imageSrc) {
+      const previewImage = document.getElementById('photo-editor-image');
+      const zoom = document.getElementById('photo-editor-zoom');
+      cropScale = 1;
+      cropOffset = { x: 0, y: 0 };
+      previewImage.src = imageSrc;
+      previewImage.style.transform = 'translate(calc(-50% + 0px), calc(-50% + 0px)) scale(1)';
+      zoom.value = 1;
+      document.getElementById('photo-editor-modal').classList.add('open');
+    }
+
+    function closePhotoEditor() {
+      document.getElementById('photo-editor-modal').classList.remove('open');
+    }
+
+    function updateCropTransform() {
+      const previewImage = document.getElementById('photo-editor-image');
+      previewImage.style.transform = `translate(calc(-50% + ${cropOffset.x}px), calc(-50% + ${cropOffset.y}px)) scale(${cropScale})`;
+    }
+
+    function cropEditorPointerDown(event) {
+      cropDragging = true;
+      cropDragStart = { ...cropOffset };
+      cropPointerStart = { x: event.clientX, y: event.clientY };
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+
+    function cropEditorPointerMove(event) {
+      if (!cropDragging) return;
+      const dx = event.clientX - cropPointerStart.x;
+      const dy = event.clientY - cropPointerStart.y;
+      cropOffset = {
+        x: cropDragStart.x + dx,
+        y: cropDragStart.y + dy,
+      };
+      updateCropTransform();
+    }
+
+    function cropEditorPointerUp() {
+      cropDragging = false;
+    }
+
+    async function saveCroppedPhoto() {
+      if (!currentSession?.token) {
+        document.getElementById('sidebar-login-status').innerHTML = '<strong>⚠ Please log in first.</strong>';
+        return;
+      }
+      const previewContainer = document.getElementById('photo-editor-preview');
+      const previewImage = document.getElementById('photo-editor-image');
+      const cropDiameter = 260;
+      const containerRect = previewContainer.getBoundingClientRect();
+      const imageRect = previewImage.getBoundingClientRect();
+      const displayedWidth = imageRect.width;
+      const displayedHeight = imageRect.height;
+      const ringLeft = (containerRect.width - cropDiameter) / 2;
+      const ringTop = (containerRect.height - cropDiameter) / 2;
+      const imageLeft = imageRect.left - containerRect.left;
+      const imageTop = imageRect.top - containerRect.top;
+      const srcX = (ringLeft - imageLeft) / cropScale;
+      const srcY = (ringTop - imageTop) / cropScale;
+      const srcSize = cropDiameter / cropScale;
+      const clampedX = clamp(srcX, 0, previewImage.naturalWidth - srcSize);
+      const clampedY = clamp(srcY, 0, previewImage.naturalHeight - srcSize);
+      const canvas = document.createElement('canvas');
+      canvas.width = cropDiameter;
+      canvas.height = cropDiameter;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, cropDiameter, cropDiameter);
+      ctx.drawImage(previewImage, clampedX, clampedY, srcSize, srcSize, 0, 0, cropDiameter, cropDiameter);
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const formData = new FormData();
+      formData.append('image', blob, 'avatar.png');
+      const res = await fetch(`${API_BASE}/api/profile-photo`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        document.getElementById('sidebar-login-status').innerHTML = `<strong>⚠ ${data.detail || 'Failed to upload photo.'}</strong>`;
+        return;
+      }
+      updateUserHeader({ ...currentSession, profile_photo: data.profile_photo, display_name: document.getElementById('settings-display-name').value || document.getElementById('sidebar-user-name').textContent });
+      document.getElementById('sidebar-login-status').innerHTML = '<strong>Profile photo updated.</strong>';
+      closePhotoEditor();
+    }
+
+    function clearSession() {
+      currentSession = null;
+      isGuestMode = false;
+      localStorage.removeItem(AUTH_SESSION_KEY);
+      localStorage.removeItem(GUEST_MODE_KEY);
+      document.getElementById('sidebar-login-status').innerHTML = 'Logged out.';
+      document.getElementById('sidebar-account-btn').classList.remove('hidden');
+      document.getElementById('sidebar-logout-fixed').classList.add('hidden');
+      document.getElementById('sidebar-logout-btn').classList.add('hidden');
+      updateUserHeader({ user: 'Guest', display_name: 'Guest', role: 'Not signed in', profile_photo: null, settings: { theme: 'light', font_size: 'medium' } });
+      resetLoginForm();
+      showLoginScreen();
+    }
+
+    function authHeaders() {
+      if (!currentSession || !currentSession.token) return {};
+      return { Authorization: `Bearer ${currentSession.token}` };
+    }
+
+    function updateUserHeader(account) {
+      const displayName = account.display_name || account.user || 'Guest';
+      document.getElementById('sidebar-user-name').textContent = displayName;
+      document.getElementById('sidebar-user-role').textContent = account.role ? account.role.charAt(0).toUpperCase() + account.role.slice(1) : 'User';
+      const displayNameElem = document.getElementById('settings-display-name');
+      const profileEmailElem = document.getElementById('profile-email');
+      if (displayNameElem) displayNameElem.value = displayName;
+      if (profileEmailElem) profileEmailElem.value = account.user || 'Not signed in';
+      document.getElementById('profile-role').textContent = account.role ? account.role.charAt(0).toUpperCase() + account.role.slice(1) : 'User';
+      setAvatar(document.getElementById('sidebar-profile-avatar'), account.profile_photo, displayName);
+      setAvatar(document.getElementById('profile-photo-preview'), account.profile_photo, displayName);
+      if (account.settings) {
+        document.getElementById('settings-theme').value = account.settings.theme || 'light';
+        document.getElementById('settings-font-size').value = account.settings.font_size || 'medium';
+        applyTheme(account.settings.theme || 'light');
+        applyFontSize(account.settings.font_size || 'medium');
+      }
+    }
+
+    function setAvatar(element, photo, displayName) {
+      if (photo) {
+        element.style.backgroundImage = `url(${photo})`;
+        element.textContent = '';
+      } else {
+        element.style.backgroundImage = 'none';
+        const initials = (displayName || 'BP').split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase();
+        element.textContent = initials;
+      }
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.body.classList.toggle('dark-mode', theme === 'dark');
+    }
+
+    function applyFontSize(fontSize) {
+      const root = document.documentElement;
+      root.style.fontSize = fontSize === 'small' ? '14px' : fontSize === 'large' ? '18px' : '16px';
+    }
+
+    async function loadCurrentAccountProfile() {
+      if (!currentSession || !currentSession.token) return;
+      const res = await fetch(`${API_BASE}/api/me`, { headers: authHeaders() });
+      if (!res.ok) {
+        return;
+      }
+      const data = await res.json();
+      updateUserHeader(data);
+      document.getElementById('account-user').value = data.user;
+      document.getElementById('reward-user').value = data.user;
+    }
+
+    function loadSession() {
+      const saved = localStorage.getItem(AUTH_SESSION_KEY);
+      const guestSaved = localStorage.getItem(GUEST_MODE_KEY);
+      if (saved) {
+        try {
+          currentSession = JSON.parse(saved);
+          if (currentSession && currentSession.token) {
+            document.getElementById('sidebar-login-user').value = currentSession.user || '';
+            document.getElementById('sidebar-login-status').innerHTML = `Logged in as <strong>${currentSession.user}</strong> (${currentSession.role}).`;
+            document.getElementById('sidebar-account-btn').classList.add('hidden');
+            document.getElementById('sidebar-logout-fixed').classList.remove('hidden');
+            loadCurrentAccountProfile();
+            hideLoginScreen();
+            return;
+          }
+        } catch {
+          localStorage.removeItem(AUTH_SESSION_KEY);
+        }
+      }
+      if (guestSaved === 'true') {
+        isGuestMode = true;
+        hideLoginScreen();
+        return;
+      }
+      showLoginScreen();
+    }
+
+    document.getElementById('sidebar-account-btn').addEventListener('click', () => {
+      const panel = document.getElementById('sidebar-account-panel');
+      const visible = panel.getAttribute('aria-hidden') === 'false';
+      panel.setAttribute('aria-hidden', visible ? 'true' : 'false');
+      panel.style.display = visible ? 'none' : 'block';
+    });
 
     // Tab Navigation
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -237,6 +858,17 @@
         
         e.target.closest('.nav-item').classList.add('active');
         const tabName = e.target.closest('.nav-item').dataset.tab;
+        document.getElementById(tabName)?.classList.add('active');
+      });
+    });
+
+    document.querySelectorAll('.account-tab-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        document.querySelectorAll('.account-tab-item').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.account-tab-content').forEach(el => el.classList.remove('active'));
+
+        e.target.closest('.account-tab-item').classList.add('active');
+        const tabName = e.target.closest('.account-tab-item').dataset.accountTab;
         document.getElementById(tabName)?.classList.add('active');
       });
     });
@@ -351,7 +983,229 @@
       document.getElementById('reward-status').innerHTML = `
         <strong>✓ ${data.message}</strong><br>
         You received: <em>${data.voucher}</em><br>
-        Claims today: ${data.claimed_today}/${data.limit}
+        Claims today: ${data.claimed_today}/${data.limit}<br>
+        Parking points: ${data.parking_points}
+      `;
+    });
+
+    document.getElementById('login-screen-btn').addEventListener('click', async () => {
+      const user = document.getElementById('login-screen-email').value.trim();
+      const password = document.getElementById('login-screen-password').value;
+      await handleLogin(user, password);
+    });
+
+    document.getElementById('register-screen-btn').addEventListener('click', () => {
+      toggleRegisterPanel();
+    });
+
+    document.getElementById('create-account-btn').addEventListener('click', async () => {
+      await registerAccount();
+    });
+
+    document.getElementById('password-toggle-btn').addEventListener('click', () => {
+      const passwordInput = document.getElementById('login-screen-password');
+      const isPassword = passwordInput.type === 'password';
+      passwordInput.type = isPassword ? 'text' : 'password';
+      document.getElementById('password-toggle-btn').textContent = isPassword ? '◉' : '⊘';
+    });
+
+    document.getElementById('sidebar-login-btn').addEventListener('click', async () => {
+      const user = document.getElementById('sidebar-login-user').value.trim();
+      const password = document.getElementById('sidebar-login-password').value;
+      await handleLogin(user, password);
+    });
+
+    document.getElementById('sidebar-logout-btn').addEventListener('click', async () => {
+      await fetch(`${API_BASE}/api/logout`, {
+        method: 'POST',
+        headers: authHeaders(),
+      });
+      clearSession();
+      document.getElementById('account-summary').innerHTML = '<strong>Logged out.</strong>';
+    });
+
+      document.getElementById('sidebar-logout-fixed').addEventListener('click', async () => {
+        await fetch(`${API_BASE}/api/logout`, {
+          method: 'POST',
+          headers: authHeaders(),
+        });
+        clearSession();
+        document.getElementById('account-summary').innerHTML = '<strong>Logged out.</strong>';
+      });
+
+    document.getElementById('sidebar-profile-avatar').addEventListener('click', () => {
+      document.getElementById('profile-photo-input').click();
+    });
+
+    document.getElementById('profile-photo-change-btn').addEventListener('click', () => {
+      document.getElementById('profile-photo-input').click();
+    });
+
+    document.getElementById('photo-editor-preview').addEventListener('pointerdown', cropEditorPointerDown);
+    document.getElementById('photo-editor-preview').addEventListener('pointermove', cropEditorPointerMove);
+    document.getElementById('photo-editor-preview').addEventListener('pointerup', cropEditorPointerUp);
+    document.getElementById('photo-editor-preview').addEventListener('pointerleave', cropEditorPointerUp);
+
+    document.getElementById('photo-editor-zoom').addEventListener('input', (event) => {
+      cropScale = parseFloat(event.target.value);
+      updateCropTransform();
+    });
+
+    document.getElementById('photo-editor-cancel').addEventListener('click', () => {
+      closePhotoEditor();
+    });
+
+    document.getElementById('photo-editor-save').addEventListener('click', saveCroppedPhoto);
+
+    document.getElementById('photo-editor-modal').addEventListener('click', (event) => {
+      if (event.target.id === 'photo-editor-modal' || event.target.classList.contains('photo-editor-backdrop')) {
+        closePhotoEditor();
+      }
+    });
+
+    document.getElementById('profile-photo-input').addEventListener('change', async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      if (!currentSession?.token) {
+        document.getElementById('sidebar-login-status').innerHTML = '<strong>⚠ Please log in first.</strong>';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        openPhotoEditor(reader.result);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('save-settings-btn').addEventListener('click', async () => {
+      if (!currentSession?.token) {
+        document.getElementById('settings-status').innerHTML = '<strong>⚠ Please log in first.</strong>';
+        return;
+      }
+      const displayName = document.getElementById('settings-display-name').value.trim();
+      const theme = document.getElementById('settings-theme').value;
+      const fontSize = document.getElementById('settings-font-size').value;
+      const res = await fetch(`${API_BASE}/api/account-settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ display_name: displayName, theme, font_size: fontSize }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        document.getElementById('settings-status').innerHTML = `<strong>⚠ ${data.detail}</strong>`;
+        return;
+      }
+      updateUserHeader({ user: currentSession.user, display_name: data.display_name, role: currentSession.role, profile_photo: document.getElementById('sidebar-profile-avatar').style.backgroundImage?.slice(5, -2), settings: data.settings });
+      document.getElementById('settings-status').innerHTML = '<strong>✓ Settings saved.</strong>';
+    });
+
+    document.getElementById('change-password-btn').addEventListener('click', async () => {
+      const currentPassword = document.getElementById('password-current').value;
+      const newPassword = document.getElementById('password-new').value;
+      if (!currentSession?.token) {
+        document.getElementById('password-status').innerHTML = '<strong>⚠ Please log in first.</strong>';
+        return;
+      }
+      const res = await fetch(`${API_BASE}/api/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+      });
+      const data = await res.json();
+      document.getElementById('password-status').innerHTML = res.ok ? `<strong>✓ ${data.message}</strong>` : `<strong>⚠ ${data.detail}</strong>`;
+    });
+
+    document.getElementById('reset-password-btn').addEventListener('click', async () => {
+      const email = document.getElementById('reset-email').value.trim();
+      const newPassword = document.getElementById('reset-password').value;
+      if (!email || !newPassword) {
+        document.getElementById('reset-status').innerHTML = '<strong>⚠ Enter email and new password.</strong>';
+        return;
+      }
+      const res = await fetch(`${API_BASE}/api/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: email, new_password: newPassword }),
+      });
+      const data = await res.json();
+      document.getElementById('reset-status').innerHTML = res.ok ? `<strong>✓ ${data.message}</strong>` : `<strong>⚠ ${data.detail}</strong>`;
+    });
+
+    document.getElementById('account-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const user = document.getElementById('account-user').value.trim();
+      if (!user) {
+        document.getElementById('account-summary').innerHTML = '<strong>⚠ Enter a user name or email.</strong>';
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/users/${encodeURIComponent(user)}`, {
+        headers: { ...authHeaders() },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        document.getElementById('account-summary').innerHTML = `<strong>⚠ ${data.detail}</strong>`;
+        return;
+      }
+      document.getElementById('account-summary').innerHTML = `
+        <strong>Account summary for ${data.user}</strong><br>
+        Role: ${data.role || 'user'}<br>
+        Total reports: ${data.total_reports}<br>
+        Parking points: ${data.parking_points}<br>
+        Help events: ${data.total_help_events}<br>
+        Claimed rewards: ${data.claimed_rewards.length ? data.claimed_rewards.join(', ') : 'None'}<br>
+        Recent reports: ${data.recent_reports.length ? data.recent_reports.map(r => r.bike_id).join(', ') : 'None'}<br>
+        Recent help events: ${data.recent_help_events.length ? data.recent_help_events.map(h => h.bike_id).join(', ') : 'None'}
+      `;
+    });
+
+    document.getElementById('parking-help-btn').addEventListener('click', async () => {
+      const user = document.getElementById('account-user').value.trim();
+      const bikeId = document.getElementById('parking-bike-id').value.trim() || 'BK-000';
+      const notes = document.getElementById('parking-notes').value.trim();
+      if (!user) {
+        document.getElementById('account-summary').innerHTML = '<strong>⚠ Enter a user name or email first.</strong>';
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/parking-help`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ user, bike_id: bikeId, notes }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        document.getElementById('account-summary').innerHTML = `<strong>⚠ ${data.detail || 'Unable to log parking help.'}</strong>`;
+        return;
+      }
+      document.getElementById('account-summary').innerHTML = `
+        <strong>✓ ${data.message}</strong><br>
+        Parking points: ${data.parking_points}
+      `;
+    });
+
+    document.getElementById('redeem-parking-btn').addEventListener('click', async () => {
+      const user = document.getElementById('account-user').value.trim();
+      if (!user) {
+        document.getElementById('account-summary').innerHTML = '<strong>⚠ Enter a user name or email first.</strong>';
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/redeem-parking-reward`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ user, points: 1 }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        document.getElementById('account-summary').innerHTML = `<strong>⚠ ${data.detail}</strong>`;
+        return;
+      }
+
+      document.getElementById('account-summary').innerHTML = `
+        <strong>✓ ${data.message}</strong><br>
+        Voucher: ${data.voucher}<br>
+        Parking points remaining: ${data.parking_points}
       `;
     });
 
@@ -366,6 +1220,7 @@
     });
 
         // Initialize
+    loadSession();
     loadDashboard();
   </script>
 </body>
