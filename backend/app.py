@@ -32,6 +32,7 @@ class Report(BaseModel):
     outside_zone: Optional[bool] = Field(False, title="Outside designated parking zone")
     toppled: Optional[bool] = Field(False, title="Bike is toppled")
     faulty: Optional[bool] = Field(False, title="Bike appears faulty")
+    image: Optional[str] = Field(None, title="Base64 encoded image data")
 
 class AiInspectRequest(BaseModel):
     bike_id: str = Field(..., title="Bike identifier")
@@ -43,6 +44,9 @@ class AiInspectRequest(BaseModel):
 class RewardRequest(BaseModel):
     user: str = Field(..., title="User name or email")
     action: str = Field(..., title="Reward action requested")
+
+class UseRewardRequest(BaseModel):
+    reward: str = Field(..., title="Reward to use")
 
 class HelpRequest(BaseModel):
     user: str = Field(..., title="User name or email")
@@ -137,6 +141,7 @@ def get_user_account(user: str):
         "parking_points": 0,
         "help_events": [],
         "claimed_rewards": [],
+        "used_rewards": [],
         "profile_photo": None,
         "settings": {
             "theme": "light",
@@ -178,6 +183,7 @@ def build_user_summary(user: str):
         "total_reports": len(account["reports"]),
         "total_help_events": len(account["help_events"]),
         "claimed_rewards": account["claimed_rewards"],
+        "used_rewards": account.get("used_rewards", []),
         "recent_reports": account["reports"][-10:],
         "recent_help_events": account["help_events"][-10:],
     }
@@ -202,15 +208,83 @@ def get_reports():
         "recent_reports": REPORTS[-10:],
     }
 
+@app.get("/api/user-reports")
+def user_reports(authorization: Optional[str] = Header(None)):
+    current_user_key = validate_session_token(authorization)
+    account = get_user_account(current_user_key)
+    return {"reports": account["reports"]}
+
 @app.post("/api/reports")
-def submit_report(report: Report):
-    REPORTS.append(report)
-    account = get_user_account(report.reporter)
-    account["reports"].append(report)
+def submit_report(
+    reporter: str = Form(...),
+    bike_id: str = Form(...),
+    issue_type: str = Form(...),
+    description: str = Form(...),
+    outside_zone: bool = Form(False),
+    toppled: bool = Form(False),
+    faulty: bool = Form(False),
+    image: UploadFile = File(None),
+):
+    image_data = None
+    if image:
+        content = image.file.read()
+        encoded_data = base64.b64encode(content).decode("utf-8")
+        image_data = f"data:{image.content_type};base64,{encoded_data}"
+    
+    report_dict = {
+        "reporter": reporter,
+        "bike_id": bike_id,
+        "issue_type": issue_type,
+        "description": description,
+        "outside_zone": outside_zone,
+        "toppled": toppled,
+        "faulty": faulty,
+        "image": image_data,
+    }
+    REPORTS.append(report_dict)
+    account = get_user_account(reporter)
+    account["reports"].append(report_dict)
     return {
         "message": "Report received. Maintenance team alerted.",
-        "report": report,
-        "user_summary": build_user_summary(report.reporter),
+        "report": report_dict,
+        "user_summary": build_user_summary(reporter),
+    }
+
+@app.post("/api/validate-report")
+def validate_report(
+    image: UploadFile = File(None),
+    bike_id: str = Form("BK-000"),
+):
+    import random
+    
+    issues = []
+    suggestions = []
+    
+    if image:
+        has_problem = random.choice([True, False])
+        if has_problem:
+            problem_type = random.choice(["illegal_parking", "toppled", "faulty"])
+            if problem_type == "illegal_parking":
+                issues.append("Illegal parking: Bike is outside designated zone")
+                suggestions.append("Dispatch maintenance to move bike into parking area")
+            elif problem_type == "toppled":
+                issues.append("Safety hazard: Bike is toppled")
+                suggestions.append("Send crew to stand the bike upright and inspect it")
+            else:
+                issues.append("Equipment issue: Bike appears faulty")
+                suggestions.append("Create a repair ticket and reserve a replacement")
+        else:
+            issues.append("No major issues detected")
+            suggestions.append("Continue monitoring the area")
+    else:
+        issues.append("No major issues detected")
+        suggestions.append("Continue monitoring the area")
+    
+    return {
+        "bike_id": bike_id,
+        "issues": issues,
+        "suggestions": suggestions,
+        "image_analyzed": image is not None,
     }
 
 @app.post("/api/parking-help")
@@ -409,6 +483,21 @@ def claim_reward(request: RewardRequest):
         "parking_points": account["parking_points"],
     }
 
+@app.post("/api/use-reward")
+def use_reward(request: UseRewardRequest, authorization: Optional[str] = Header(None)):
+    current_user_key = validate_session_token(authorization)
+    account = get_user_account(current_user_key)
+    reward = request.reward
+    if reward not in account["claimed_rewards"]:
+        raise HTTPException(status_code=400, detail="This reward has not been claimed or is already used.")
+    account["claimed_rewards"].remove(reward)
+    account.setdefault("used_rewards", []).append(reward)
+    return {
+        "message": f"Reward '{reward}' used successfully.",
+        "used_rewards": account["used_rewards"],
+        "claimed_rewards": account["claimed_rewards"],
+    }
+
 @app.get("/api/rewards/{user}")
 def reward_status(user: str):
     record = reward_store.get(user.lower())
@@ -421,4 +510,5 @@ def reward_status(user: str):
         "parking_points": account["parking_points"],
         "help_events": account["help_events"],
         "claimed_rewards": account["claimed_rewards"],
+        "used_rewards": account.get("used_rewards", []),
     }

@@ -240,13 +240,13 @@
                 <textarea id="custom-issue-description" rows="3" placeholder="Describe what you saw"></textarea>
               </div>
 
-              <div class="form-group checkbox-group">
-                <label><input type="checkbox" id="outside-zone" /> Outside parking zone</label>
-                <label><input type="checkbox" id="toppled" /> Bike toppled</label>
-                <label><input type="checkbox" id="faulty" /> Faulty bike</label>
+              <div class="form-group">
+                <label>Upload image (optional)</label>
+                <input type="file" id="report-image" accept="image/*" />
               </div>
+              <div id="validation-result" class="message-box"></div>
 
-              <button type="submit" class="btn-primary">Send report</button>
+              <button type="submit" class="btn-primary" id="submit-report-btn" disabled>Send report</button>
             </form>
             <div id="report-message" class="message-box"></div>
           </div>
@@ -333,18 +333,28 @@
             </div>
 
             <!-- Available Vouchers -->
-            <div class="vouchers-display">
-              <h3>Available Vouchers</h3>
-              <div class="voucher-list">
-                <div class="voucher-item">🍔 CDC Food Voucher</div>
-                <div class="voucher-item">🛍️ CDC Shopping Discount</div>
-                <div class="voucher-item">🚌 CDC Transport Subsidy</div>
-                <div class="voucher-item">🔧 CDC Bike Care Coupon</div>
+            <div class="vouchers-display" id="reward-use-panel">
+                <h3>Available Vouchers</h3>
+                <div class="voucher-list">
+                  <div class="voucher-item">🍔 CDC Food Voucher</div>
+                  <div class="voucher-item">🛍️ CDC Shopping Discount</div>
+                  <div class="voucher-item">🚌 CDC Transport Subsidy</div>
+                  <div class="voucher-item">🔧 CDC Bike Care Coupon</div>
+                </div>
+
+                <div class="reward-use-panel-inner">
+                  <h3>Reward Use</h3>
+                  <div id="reward-use-instructions" class="reward-use-text">
+                    Claim a voucher, then use it here to apply the reward to your account.
+                  </div>
+                  <div id="claimed-rewards-list" class="claimed-rewards-list">
+                    <p class="small-text">No claimed rewards yet.</p>
+                  </div>
+                  <div id="reward-use-status" class="message-box tiny-box"></div>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      </div>
+          </section>
 
       <!-- Account Tab -->
       <div id="account" class="tab-content">
@@ -562,6 +572,7 @@
       document.getElementById('register-form').classList.add('hidden');
       document.getElementById('login-screen-status').innerHTML = '<strong>✓ Account created and signed in.</strong>';
       clearLoginError();
+      loadRewardUsePanel();
       return true;
     }
 
@@ -588,6 +599,7 @@
       updateUserHeader(data.account);
       hideLoginScreen();
       document.getElementById('sidebar-account-btn').classList.add('hidden');
+      loadRewardUsePanel();
       return true;
     }
 
@@ -772,6 +784,7 @@
       updateUserHeader(data);
       document.getElementById('account-user').value = data.user;
       document.getElementById('reward-user').value = data.user;
+      loadRewardUsePanel();
     }
 
     function loadSession() {
@@ -875,6 +888,7 @@
       const reportHistory = document.getElementById('report-history-modal');
       if (reportHistory) {
         reportHistory.classList.remove('hidden');
+        fetchUserReports();
         return;
       }
 
@@ -941,6 +955,70 @@
       `;
     }
 
+    async function loadRewardUsePanel() {
+      const user = document.getElementById('reward-user').value.trim() || currentSession?.user;
+      if (!user) {
+        document.getElementById('claimed-rewards-list').innerHTML = '<p class="small-text">Enter your email to show claimed rewards.</p>';
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/rewards/${encodeURIComponent(user)}`);
+      if (!res.ok) {
+        document.getElementById('claimed-rewards-list').innerHTML = '<p class="small-text">Unable to load reward status.</p>';
+        return;
+      }
+
+      const data = await res.json();
+      const list = document.getElementById('claimed-rewards-list');
+      const claimed = data.claimed_rewards || [];
+      const used = data.used_rewards || [];
+
+      if (claimed.length === 0) {
+        list.innerHTML = '<p class="small-text">No claimed rewards yet.</p>';
+      } else {
+        list.innerHTML = claimed.map((reward) => `
+          <div class="claimed-reward-item">
+            <span>${reward}</span>
+            <button type="button" class="use-reward-btn" data-reward="${reward}">Use reward</button>
+          </div>
+        `).join('');
+      }
+
+      const instructions = document.getElementById('reward-use-instructions');
+      if (used.length > 0) {
+        instructions.innerHTML = `You have used ${used.length} reward${used.length === 1 ? '' : 's'} already. Choose a claimed reward to use.`;
+      } else {
+        instructions.innerHTML = 'Claim a voucher, then use it here to apply the reward to your account.';
+      }
+    }
+
+    async function useReward(reward) {
+      if (!currentSession?.token) {
+        document.getElementById('reward-use-status').innerHTML = '<strong>⚠ Please log in to use rewards.</strong>';
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/use-reward`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ reward }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        document.getElementById('reward-use-status').innerHTML = `<strong>⚠ ${data.detail}</strong>`;
+        return;
+      }
+      document.getElementById('reward-use-status').innerHTML = `<strong>✓ ${data.message}</strong>`;
+      loadRewardUsePanel();
+    }
+
+    document.getElementById('reward-user')?.addEventListener('input', () => loadRewardUsePanel());
+    document.getElementById('reward-use-panel')?.addEventListener('click', async (event) => {
+      const button = event.target.closest('.use-reward-btn');
+      if (!button) return;
+      await useReward(button.dataset.reward);
+    });
+
     // Issue type change handler
     document.getElementById('issue-type').addEventListener('change', (e) => {
       const customIssueGroup = document.getElementById('custom-issue-group');
@@ -955,8 +1033,53 @@
     });
 
     // Report form
+    let reportValidationState = {
+      hasProblems: false,
+    };
+
+    async function validateReportImage() {
+      const imageInput = document.getElementById('report-image');
+      const bikeId = document.getElementById('bike-id').value.trim();
+      
+      if (!imageInput.files.length) {
+        document.getElementById('validation-result').innerHTML = '<strong>⚠ Upload an image to analyze the report.</strong>';
+        reportValidationState.hasProblems = false;
+        document.getElementById('submit-report-btn').disabled = true;
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('bike_id', bikeId || 'BK-000');
+      formData.append('image', imageInput.files[0]);
+
+      const res = await fetch(`${API_BASE}/api/validate-report`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      const hasRealProblems = data.issues.some(i => i !== 'No major issues detected');
+      reportValidationState.hasProblems = hasRealProblems;
+
+      const resultHtml = `
+        <strong>${hasRealProblems ? '✓ Problems detected' : '⚠ No problems detected'}</strong><br>
+        ${data.issues.map(i => `• ${i}`).join('<br>')}<br>
+        <em style="font-size: 12px;">Suggestions: ${data.suggestions.map(s => s).join('; ')}</em>
+      `;
+      document.getElementById('validation-result').innerHTML = resultHtml;
+      document.getElementById('submit-report-btn').disabled = !hasRealProblems;
+    }
+
+    document.getElementById('report-image').addEventListener('change', validateReportImage);
+
     document.getElementById('report-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      if (!reportValidationState.hasProblems) {
+        document.getElementById('report-message').innerHTML = '<strong>⚠ AI validation must detect problems before submitting.</strong>';
+        return;
+      }
+
       const issueType = document.getElementById('issue-type').value;
       let description = '';
       
@@ -970,26 +1093,29 @@
         description = issueType.replace('_', ' ');
       }
 
-      const payload = {
-        reporter: document.getElementById('reporter').value.trim(),
-        bike_id: document.getElementById('bike-id').value.trim(),
-        issue_type: issueType,
-        description: description,
-        outside_zone: document.getElementById('outside-zone').checked,
-        toppled: document.getElementById('toppled').checked,
-        faulty: document.getElementById('faulty').checked,
-      };
+      const formData = new FormData();
+      formData.append('reporter', document.getElementById('reporter').value.trim());
+      formData.append('bike_id', document.getElementById('bike-id').value.trim());
+      formData.append('issue_type', issueType);
+      formData.append('description', description);
+      
+      const imageInput = document.getElementById('report-image');
+      if (imageInput.files.length > 0) {
+        formData.append('image', imageInput.files[0]);
+      }
 
       const res = await fetch(`${API_BASE}/api/reports`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: formData,
       });
 
       const data = await res.json();
       document.getElementById('report-message').innerHTML = `<strong>✓ ${data.message}</strong>`;
       document.getElementById('report-form').reset();
       document.getElementById('custom-issue-group').classList.add('hidden');
+      document.getElementById('validation-result').innerHTML = '';
+      document.getElementById('submit-report-btn').disabled = true;
+      reportValidationState.hasProblems = false;
       loadReports();
     });
 
@@ -1047,6 +1173,7 @@
         Claims today: ${data.claimed_today}/${data.limit}<br>
         Parking points: ${data.parking_points}
       `;
+      loadRewardUsePanel();
     });
 
     document.getElementById('login-screen-btn').addEventListener('click', async () => {
