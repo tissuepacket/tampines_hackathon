@@ -79,6 +79,11 @@ class SettingsRequest(BaseModel):
     theme: Optional[str] = Field(None, title="Preferred theme")
     font_size: Optional[str] = Field(None, title="Preferred font size")
 
+class ProfileUpdateRequest(BaseModel):
+    display_name: Optional[str] = Field(None, title="Display name")
+    email: Optional[str] = Field(None, title="Email address")
+    phone_number: Optional[str] = Field(None, title="Phone number")
+
 class ReportSummary(BaseModel):
     total_reports: int
     recent_reports: List[Report]
@@ -136,6 +141,7 @@ def get_user_account(user: str):
     account = USER_ACCOUNTS.setdefault(user_key, {
         "user": user,
         "display_name": user,
+        "phone_number": "",
         "role": role,
         "reports": [],
         "parking_points": 0,
@@ -149,6 +155,7 @@ def get_user_account(user: str):
         },
     })
     account.setdefault("display_name", user)
+    account.setdefault("phone_number", "")
     account.setdefault("profile_photo", None)
     account.setdefault("settings", {"theme": "light", "font_size": "medium"})
     account["user"] = user
@@ -176,6 +183,7 @@ def build_user_summary(user: str):
     return {
         "user": account["user"],
         "display_name": account.get("display_name", account["user"]),
+        "phone_number": account.get("phone_number", ""),
         "role": account["role"],
         "parking_points": account["parking_points"],
         "settings": account.get("settings", {"theme": "light", "font_size": "medium"}),
@@ -354,6 +362,8 @@ def change_password(request: PasswordChangeRequest, authorization: Optional[str]
     proxy = PROXY_USERS.get(current_user_key)
     if not proxy or proxy["password"] != request.current_password:
         raise HTTPException(status_code=401, detail="Current password is incorrect.")
+    if not request.new_password.strip():
+        raise HTTPException(status_code=400, detail="New password cannot be empty.")
     proxy["password"] = request.new_password
     return {"message": "Password changed successfully."}
 
@@ -363,8 +373,45 @@ def reset_password(request: PasswordResetRequest):
     proxy = PROXY_USERS.get(user_key)
     if not proxy:
         raise HTTPException(status_code=404, detail="User not found.")
+    if not request.new_password.strip():
+        raise HTTPException(status_code=400, detail="New password cannot be empty.")
     proxy["password"] = request.new_password
     return {"message": "Password reset successfully (demo mode)."}
+
+@app.post("/api/account-profile")
+def account_profile(request: ProfileUpdateRequest, authorization: Optional[str] = Header(None)):
+    current_user_key = validate_session_token(authorization)
+    account = get_user_account(current_user_key)
+    next_email = (request.email or account["user"]).strip()
+    next_phone = (request.phone_number or "").strip()
+    next_display_name = (request.display_name or account.get("display_name") or account["user"]).strip()
+
+    if not next_email:
+        raise HTTPException(status_code=400, detail="Email cannot be empty.")
+
+    new_user_key = next_email.lower()
+    existing_proxy = PROXY_USERS.get(current_user_key)
+    if not existing_proxy:
+        raise HTTPException(status_code=404, detail="Current account could not be found.")
+
+    if new_user_key != current_user_key and new_user_key in PROXY_USERS:
+        raise HTTPException(status_code=400, detail="That email is already in use.")
+
+    if new_user_key != current_user_key:
+        PROXY_USERS[new_user_key] = PROXY_USERS.pop(current_user_key)
+        account = USER_ACCOUNTS.pop(current_user_key, account)
+        USER_ACCOUNTS[new_user_key] = account
+        for token, user_key in list(SESSIONS.items()):
+            if user_key == current_user_key:
+                SESSIONS[token] = new_user_key
+
+    account["user"] = next_email
+    account["display_name"] = next_display_name
+    account["phone_number"] = next_phone
+    return {
+        "message": "Profile updated successfully.",
+        "account": build_user_summary(next_email),
+    }
 
 @app.post("/api/account-settings")
 def account_settings(request: SettingsRequest, authorization: Optional[str] = Header(None)):
@@ -389,8 +436,8 @@ def profile_photo(image: UploadFile = File(...), authorization: Optional[str] = 
     return {"message": "Profile photo updated.", "profile_photo": encoded}
 
 @app.get("/api/me")
-def current_user():
-    current_user_key = get_current_user()
+def current_user(authorization: Optional[str] = Header(None)):
+    current_user_key = validate_session_token(authorization)
     return build_user_summary(current_user_key)
 
 @app.get("/api/proxy-accounts")
