@@ -150,76 +150,24 @@ body.login-active .layout {
 }
 
 .login-screen-panel {
-  width: min(980px, 100%);
-  max-width: 1040px;
-  display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: 0;
+  width: min(480px, 100%);
+  max-width: 480px;
   border-radius: 32px;
   overflow: hidden;
   background: #ffffff;
   box-shadow: 0 40px 100px rgba(15, 23, 42, 0.14);
 }
 
-.login-screen-illustration {
-  background: linear-gradient(180deg, #eef4ff 0%, #f8fafc 100%);
-  padding: 48px 40px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
 
-.illustration-title span {
-  display: inline-flex;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(99, 102, 241, 0.12);
-  color: #4338ca;
-  font-size: 12px;
-  font-weight: 700;
-  margin-bottom: 20px;
-}
-
-.illustration-title h2 {
-  margin: 0 0 12px;
-  font-size: 34px;
-  line-height: 1.05;
-  color: #111827;
-}
-
-.illustration-title p {
-  margin: 0;
-  color: #4b5563;
-  max-width: 300px;
-}
-
-.bike-illustration {
-  width: 100%;
-  max-width: 360px;
-  height: auto;
-  margin-top: 24px;
-}
-
-@keyframes wheel-spin {
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes rider-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-
-.bike-scene {
-  animation: rider-bob 3s ease-in-out infinite;
-}
 
 .login-screen-card {
   background: #ffffff;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   padding: 48px;
   z-index: 1;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .login-screen-header-compact {
@@ -239,6 +187,16 @@ body.login-active .layout {
 .login-screen-form {
   display: grid;
   gap: 16px;
+  position: relative;
+  width: 100%;
+  transition: opacity 0.3s ease;
+}
+
+.login-screen-form.hidden {
+  display: none !important;
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .password-input-wrapper {
@@ -382,16 +340,7 @@ body.login-active .layout {
   margin-top: -4px;
 }
 
-.login-screen-form .register-panel {
-  display: grid;
-  gap: 12px;
-  margin-top: 12px;
-  padding: 16px 0 0 0;
-}
 
-.register-panel input {
-  width: 100%;
-}
 
 .shake {
   animation: buzz 0.9s ease-in-out;
@@ -1199,6 +1148,7 @@ body {
     border-bottom: 1px solid var(--border-color);
   }
 
+
   .sidebar-header {
     margin-bottom: 0;
     padding-bottom: 0;
@@ -1217,4 +1167,132 @@ body {
   .metrics-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  padding: 24px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.modal-close-btn:hover {
+  background: var(--main-bg);
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Report History List */
+.report-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.report-history-item {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.report-history-item:hover {
+  border-color: var(--accent);
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.report-id-badge {
+  background: var(--accent);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.report-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.report-info {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.report-info strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.report-status {
+  text-align: right;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.status-ok {
+  color: var(--status-ok);
+  font-size: 16px;
 }

@@ -9,80 +9,13 @@
 <body>
   <div class="login-screen" id="login-screen">
     <div class="login-screen-panel">
-      <div class="login-screen-illustration">
-        <div class="illustration-title">
-          <span>BikePatrol</span>
-          <h2>Ready to ride?</h2>
-          <p>Securely access your patrol dashboard and keep bike reporting moving.</p>
-        </div>
-        <svg class="bike-illustration" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
-          <!-- Sky gradient background -->
-          <defs>
-            <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
-              <stop offset="40%" style="stop-color:#334155;stop-opacity:1" />
-              <stop offset="70%" style="stop-color:#f97316;stop-opacity:1" />
-              <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:0.8" />
-            </linearGradient>
-          </defs>
-          <rect width="400" height="300" fill="url(#skyGradient)"/>
-          
-          <!-- Sun -->
-          <circle cx="320" cy="80" r="45" fill="#fbbf24" opacity="0.9"/>
-          <circle cx="320" cy="80" r="42" fill="#f59e0b"/>
-          
-          <!-- Ground/Park -->
-          <ellipse cx="200" cy="280" rx="200" ry="40" fill="#15803d" opacity="0.8"/>
-          <path d="M 0 240 Q 100 200 200 220 T 400 240 L 400 300 L 0 300 Z" fill="#166534"/>
-          
-          <!-- Background trees -->
-          <circle cx="60" cy="200" r="35" fill="#065f46" opacity="0.6"/>
-          <circle cx="340" cy="210" r="40" fill="#065f46" opacity="0.6"/>
-          
-          <!-- Bike wheels -->
-          <circle cx="140" cy="240" r="28" fill="none" stroke="#1f2937" stroke-width="3"/>
-          <circle cx="140" cy="240" r="24" fill="none" stroke="#1f2937" stroke-width="1.5" opacity="0.5"/>
-          <circle cx="260" cy="240" r="28" fill="none" stroke="#1f2937" stroke-width="3"/>
-          <circle cx="260" cy="240" r="24" fill="none" stroke="#1f2937" stroke-width="1.5" opacity="0.5"/>
-          
-          <!-- Bike frame -->
-          <line x1="140" y1="240" x2="200" y2="180" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
-          <line x1="200" y1="180" x2="260" y2="240" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
-          <line x1="140" y1="240" x2="260" y2="240" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
-          <line x1="200" y1="180" x2="200" y2="210" stroke="#1f2937" stroke-width="3" stroke-linecap="round"/>
-          
-          <!-- Bike seat -->
-          <ellipse cx="200" cy="175" rx="16" ry="6" fill="#1f2937"/>
-          
-          <!-- Bike handlebar -->
-          <line x1="140" y1="220" x2="120" y2="210" stroke="#1f2937" stroke-width="3" stroke-linecap="round"/>
-          <circle cx="120" cy="210" r="4" fill="#1f2937"/>
-          
-          <!-- Rider head -->
-          <circle cx="195" cy="145" r="14" fill="#d97706" stroke="#b45309" stroke-width="1"/>
-          
-          <!-- Rider torso -->
-          <rect x="188" y="160" width="14" height="35" rx="3" fill="#dc2626"/>
-          
-          <!-- Rider arms -->
-          <line x1="195" y1="165" x2="170" y2="170" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
-          <line x1="195" y1="165" x2="125" y2="205" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
-          
-          <!-- Rider legs -->
-          <line x1="195" y1="195" x2="170" y2="235" stroke="#1f2937" stroke-width="3" stroke-linecap="round"/>
-          <line x1="195" y1="195" x2="240" y2="232" stroke="#1f2937" stroke-width="3" stroke-linecap="round"/>
-          
-          <!-- Rider backpack -->
-          <rect x="188" y="158" width="18" height="22" rx="3" fill="#991b1b" opacity="0.7"/>
-        </svg>
-      </div>
       <div class="login-screen-card">
-        <div class="login-screen-header login-screen-header-compact">
+        <div class="login-screen-header login-screen-header-compact" id="form-header">
           <div class="brand-icon">✦</div>
-          <h1>Welcome back!</h1>
-          <p>Please enter your details</p>
+          <h1 id="form-title">Welcome back!</h1>
+          <p id="form-subtitle">Please enter your details</p>
         </div>
-        <div class="login-screen-form">
+        <div class="login-screen-form" id="login-form">
           <label>Email</label>
           <input type="text" id="login-screen-email" placeholder="Enter your email" autocomplete="username" />
           <label>Password</label>
@@ -96,19 +29,23 @@
             <span>Don't have an account?</span>
             <button type="button" id="register-screen-btn" class="link-button">Sign up</button>
           </div>
-
-          <div id="register-screen-panel" class="register-panel hidden">
-            <label>Register email</label>
-            <input type="text" id="register-email" placeholder="Enter your email" autocomplete="email" />
-            <label>Register password</label>
-            <input type="password" id="register-password" placeholder="Enter your password" autocomplete="new-password" />
-            <label>Confirm password</label>
-            <input type="password" id="register-confirm-password" placeholder="Confirm your password" autocomplete="new-password" />
-            <button type="button" id="create-account-btn" class="btn-primary">Create account</button>
-          </div>
-
-          <div id="login-screen-status" class="message-box"></div>
         </div>
+
+        <div class="login-screen-form hidden" id="register-form">
+          <label>Register email</label>
+          <input type="text" id="register-email" placeholder="Enter your email" autocomplete="email" />
+          <label>Register password</label>
+          <input type="password" id="register-password" placeholder="Enter your password" autocomplete="new-password" />
+          <label>Confirm password</label>
+          <input type="password" id="register-confirm-password" placeholder="Confirm your password" autocomplete="new-password" />
+          <button type="button" id="create-account-btn" class="btn-primary">Create account</button>
+          <div class="login-form-footer">
+            <span>Already have an account?</span>
+            <button type="button" id="back-to-login-btn" class="link-button">Log in</button>
+          </div>
+        </div>
+
+        <div id="login-screen-status" class="message-box"></div>
       </div>
     </div>
   </div>
@@ -197,8 +134,8 @@
           <input type="text" placeholder="Search reports..." />
         </div>
         <div class="header-actions">
-          <button class="btn-export" id="download-reports-btn">⬇ Download Reports</button>
-          <button class="btn-add-shipment" id="create-maintenance-btn">🔧 Create Maintenance Request</button>
+          <button class="btn-export" id="report-history-btn">📋 Report History</button>
+          <button class="btn-add-shipment" id="create-maintenance-btn" style="display: none;">🔧 Create Maintenance Request</button>
         </div>
       </header>
 
@@ -293,13 +230,14 @@
                     <option value="illegal_parking">Illegal parking</option>
                     <option value="toppled">Toppled bike</option>
                     <option value="faulty">Faulty bike</option>
-                    <option value="general">General issue</option>
+                    <option value="others">Others</option>
                   </select>
                 </div>
-                <div class="form-group">
-                  <label>Description *</label>
-                  <textarea id="description" rows="3" placeholder="Describe what you saw"></textarea>
-                </div>
+              </div>
+
+              <div class="form-group hidden" id="custom-issue-group">
+                <label>Please describe the issue *</label>
+                <textarea id="custom-issue-description" rows="3" placeholder="Describe what you saw"></textarea>
               </div>
 
               <div class="form-group checkbox-group">
@@ -562,19 +500,32 @@
       document.getElementById('register-email').value = '';
       document.getElementById('register-password').value = '';
       document.getElementById('register-confirm-password').value = '';
-      document.getElementById('register-screen-panel').classList.add('hidden');
-      document.getElementById('register-screen-btn').textContent = 'Sign up';
+      document.getElementById('login-form').classList.remove('hidden');
+      document.getElementById('register-form').classList.add('hidden');
       clearLoginError();
       document.getElementById('login-screen-status').innerHTML = '';
       document.querySelectorAll('.shake').forEach((el) => el.classList.remove('shake'));
     }
 
     function toggleRegisterPanel() {
-      const panel = document.getElementById('register-screen-panel');
-      const toggleBtn = document.getElementById('register-screen-btn');
-      const visible = panel.classList.contains('hidden');
-      panel.classList.toggle('hidden');
-      toggleBtn.textContent = visible ? 'Back to sign in' : 'Sign up';
+      const loginForm = document.getElementById('login-form');
+      const registerForm = document.getElementById('register-form');
+      const titleEl = document.getElementById('form-title');
+      const subtitleEl = document.getElementById('form-subtitle');
+      const isLoginVisible = !loginForm.classList.contains('hidden');
+      
+      if (isLoginVisible) {
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+        titleEl.textContent = 'Create account';
+        subtitleEl.textContent = 'Please enter your details to register';
+      } else {
+        registerForm.classList.add('hidden');
+        loginForm.classList.remove('hidden');
+        titleEl.textContent = 'Welcome back!';
+        subtitleEl.textContent = 'Please enter your details';
+      }
+      
       clearLoginError();
       document.getElementById('login-screen-status').innerHTML = '';
     }
@@ -607,8 +558,8 @@
       document.getElementById('account-summary').innerHTML = `<strong>Logged in as ${data.account.display_name} (${data.role}).</strong>`;
       updateUserHeader(data.account);
       hideLoginScreen();
-      document.getElementById('register-screen-panel').classList.add('hidden');
-      document.getElementById('register-screen-btn').textContent = 'Register new account';
+      document.getElementById('login-form').classList.remove('hidden');
+      document.getElementById('register-form').classList.add('hidden');
       document.getElementById('login-screen-status').innerHTML = '<strong>✓ Account created and signed in.</strong>';
       clearLoginError();
       return true;
@@ -775,6 +726,13 @@
       document.getElementById('profile-role').textContent = account.role ? account.role.charAt(0).toUpperCase() + account.role.slice(1) : 'User';
       setAvatar(document.getElementById('sidebar-profile-avatar'), account.profile_photo, displayName);
       setAvatar(document.getElementById('profile-photo-preview'), account.profile_photo, displayName);
+      
+      // Show maintenance button only for admin users
+      const maintenanceBtn = document.getElementById('create-maintenance-btn');
+      if (maintenanceBtn) {
+        maintenanceBtn.style.display = (account.role === 'admin') ? 'block' : 'none';
+      }
+      
       if (account.settings) {
         document.getElementById('settings-theme').value = account.settings.theme || 'light';
         document.getElementById('settings-font-size').value = account.settings.font_size || 'medium';
@@ -895,26 +853,128 @@
         return;
       }
 
-      tbody.innerHTML = data.recent_reports.map((r, i) => `
+      tbody.innerHTML = data.recent_reports.map((r) => {
+        const reportId = r.report_id || generateReportId();
+        return `
         <tr>
-          <td>#${i + 1000}</td>
+          <td>${reportId}</td>
           <td>${r.reporter}</td>
           <td>${r.bike_id}</td>
           <td><span class="badge">${r.issue_type.replace('_', ' ')}</span></td>
           <td>${r.description}</td>
           <td><span class="status-ok">●</span> Received</td>
         </tr>
-      `).join('');
+      `}).join('');
     }
+
+    function generateReportId() {
+      return 'RPT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    }
+
+    function showReportHistory() {
+      const reportHistory = document.getElementById('report-history-modal');
+      if (reportHistory) {
+        reportHistory.classList.remove('hidden');
+        return;
+      }
+
+      const modal = document.createElement('div');
+      modal.id = 'report-history-modal';
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Your Report History</h2>
+            <button class="modal-close-btn" onclick="document.getElementById('report-history-modal').classList.add('hidden')">✕</button>
+          </div>
+          <div class="modal-body" id="report-history-body">
+            <p>Loading your reports...</p>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      fetchUserReports();
+    }
+
+    async function fetchUserReports() {
+      const res = await fetch(`${API_BASE}/api/user-reports`, {
+        headers: authHeaders(),
+      });
+
+      if (!res.ok) {
+        document.getElementById('report-history-body').innerHTML = '<p style="color: #ef4444;">Please log in to view your reports.</p>';
+        return;
+      }
+
+      const data = await res.json();
+      const body = document.getElementById('report-history-body');
+
+      if (!data.reports || data.reports.length === 0) {
+        body.innerHTML = '<p>You haven\'t submitted any reports yet.</p>';
+        return;
+      }
+
+      body.innerHTML = `
+        <div class="report-history-list">
+          ${data.reports.map((r) => {
+            const reportId = r.report_id || generateReportId();
+            return `
+            <div class="report-history-item">
+              <div class="report-id-badge">${reportId}</div>
+              <div class="report-details">
+                <div class="report-info">
+                  <strong>Bike ID:</strong> ${r.bike_id}
+                </div>
+                <div class="report-info">
+                  <strong>Issue:</strong> ${r.issue_type.replace('_', ' ')}
+                </div>
+                <div class="report-info">
+                  <strong>Description:</strong> ${r.description}
+                </div>
+              </div>
+              <div class="report-status"><span class="status-ok">●</span> Received</div>
+            </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    // Issue type change handler
+    document.getElementById('issue-type').addEventListener('change', (e) => {
+      const customIssueGroup = document.getElementById('custom-issue-group');
+      if (e.target.value === 'others') {
+        customIssueGroup.classList.remove('hidden');
+        document.getElementById('custom-issue-description').setAttribute('required', '');
+      } else {
+        customIssueGroup.classList.add('hidden');
+        document.getElementById('custom-issue-description').removeAttribute('required');
+        document.getElementById('custom-issue-description').value = '';
+      }
+    });
 
     // Report form
     document.getElementById('report-form').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const issueType = document.getElementById('issue-type').value;
+      let description = '';
+      
+      if (issueType === 'others') {
+        description = document.getElementById('custom-issue-description').value.trim();
+        if (!description) {
+          document.getElementById('report-message').innerHTML = '<strong>⚠ Please describe the issue.</strong>';
+          return;
+        }
+      } else {
+        description = issueType.replace('_', ' ');
+      }
+
       const payload = {
         reporter: document.getElementById('reporter').value.trim(),
         bike_id: document.getElementById('bike-id').value.trim(),
-        issue_type: document.getElementById('issue-type').value,
-        description: document.getElementById('description').value.trim(),
+        issue_type: issueType,
+        description: description,
         outside_zone: document.getElementById('outside-zone').checked,
         toppled: document.getElementById('toppled').checked,
         faulty: document.getElementById('faulty').checked,
@@ -929,6 +989,7 @@
       const data = await res.json();
       document.getElementById('report-message').innerHTML = `<strong>✓ ${data.message}</strong>`;
       document.getElementById('report-form').reset();
+      document.getElementById('custom-issue-group').classList.add('hidden');
       loadReports();
     });
 
@@ -995,6 +1056,10 @@
     });
 
     document.getElementById('register-screen-btn').addEventListener('click', () => {
+      toggleRegisterPanel();
+    });
+
+    document.getElementById('back-to-login-btn').addEventListener('click', () => {
       toggleRegisterPanel();
     });
 
@@ -1209,9 +1274,9 @@
       `;
     });
 
-    // Download reports
-    document.getElementById('download-reports-btn').addEventListener('click', () => {
-      alert('Report download feature coming soon!');
+    // Report History
+    document.getElementById('report-history-btn').addEventListener('click', () => {
+      showReportHistory();
     });
 
     // Create maintenance request
