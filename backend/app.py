@@ -8,6 +8,9 @@ from pathlib import Path
 from uuid import uuid4
 import os
 import base64
+import json
+import urllib.error
+import urllib.request
 
 app = FastAPI(title="Bike Patrol Rewards", version="0.1")
 app.add_middleware(
@@ -25,21 +28,25 @@ class IssueType(str, Enum):
     general = "general"
 
 class Report(BaseModel):
+    report_id: Optional[str] = Field(None, title="Report identifier")
     reporter: str = Field(..., title="Reporter name or email")
     bike_id: str = Field(..., title="Bike identifier")
     issue_type: IssueType = Field(..., title="Type of issue")
     description: str = Field(..., title="What happened")
+    location_text: Optional[str] = Field(None, title="Reported location")
+    location_address: Optional[str] = Field(None, title="Resolved rough address")
+    location_lat: Optional[float] = Field(None, title="Latitude")
+    location_lng: Optional[float] = Field(None, title="Longitude")
+    location_accuracy: Optional[float] = Field(None, title="Location accuracy in meters")
     outside_zone: Optional[bool] = Field(False, title="Outside designated parking zone")
     toppled: Optional[bool] = Field(False, title="Bike is toppled")
     faulty: Optional[bool] = Field(False, title="Bike appears faulty")
     image: Optional[str] = Field(None, title="Base64 encoded image data")
-
-class AiInspectRequest(BaseModel):
-    bike_id: str = Field(..., title="Bike identifier")
-    outside_zone: bool = Field(False, title="Outside designated parking zone")
-    toppled: bool = Field(False, title="Bike is toppled")
-    faulty: bool = Field(False, title="Bike appears faulty")
-    notes: Optional[str] = Field(None, title="Additional notes")
+    ai_summary: Optional[str] = Field(None, title="AI assessment of the uploaded image")
+    status: Optional[str] = Field("pending", title="Report review status")
+    reviewed_by: Optional[str] = Field(None, title="Report reviewed by")
+    review_notes: Optional[str] = Field(None, title="Review notes")
+    review_action: Optional[str] = Field(None, title="Review action")
 
 class RewardRequest(BaseModel):
     user: str = Field(..., title="User name or email")
@@ -87,6 +94,9 @@ class ProfileUpdateRequest(BaseModel):
 class ReportSummary(BaseModel):
     total_reports: int
     recent_reports: List[Report]
+    all_reports: Optional[List[Report]] = None
+    pending_reports: Optional[List[Report]] = None
+    completed_reports: Optional[List[Report]] = None
 
 REPORTS: List[Report] = []
 USER_ACCOUNTS: Dict[str, dict] = {}
@@ -94,6 +104,136 @@ REWARD_LIMIT_PER_DAY = 3
 reward_store = {}
 SESSIONS: Dict[str, str] = {}
 ROLE_PRIORITY = {"admin": 3, "maintenance": 2, "user": 1}
+
+
+def get_llm_token() -> Optional[str]:
+    load_env_file()
+    return os.getenv("LLM_TOKEN") or os.getenv("OPENAI_API_KEY")
+
+
+def extract_response_text(payload: dict) -> str:
+    if isinstance(payload.get("output_text"), str) and payload["output_text"].strip():
+        return payload["output_text"].strip()
+
+    for output_item in payload.get("output", []):
+        for content_item in output_item.get("content", []):
+            text = content_item.get("text")
+            if text and isinstance(text, str):
+                return text.strip()
+    return ""
+
+
+def analyze_report_image_with_llm(
+    image_data_url: str,
+    bike_id: str,
+    issue_type: str,
+    description: str,
+    location_text: Optional[str] = None,
+    location_address: Optional[str] = None,
+) -> Optional[str]:
+    token = get_llm_token()
+    if not token:
+        return None
+
+    prompt = (
+        "Review this bicycle report image and give a short assessment in 1-2 sentences. "
+        "Mention whether the image appears consistent with the report details and note any obvious issue. "
+        "If there is no clear problem, say so clearly. "
+        f"Report details: bike_id={bike_id}, issue_type={issue_type}, description={description}."
+        + (f" Report location: {location_text}." if location_text else "")
+        + (f" Rough address: {location_address}." if location_address else "")
+    )
+    payload = {
+        "model": "gpt-4.1-mini",
+        "input": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": prompt},
+                    {"type": "input_image", "image_url": image_data_url, "detail": "low"},
+                ],
+            }
+        ],
+        "max_output_tokens": 200,
+    }
+
+    request = urllib.request.Request(
+        "https://api.openai.com/v1/responses",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            response_payload = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError):
+        return None
+
+    return extract_response_text(response_payload) or None
+
+
+def format_location_text(lat: Optional[float], lng: Optional[float], accuracy: Optional[float]) -> Optional[str]:
+    if lat is None or lng is None:
+        return None
+    base = f"{lat:.6f}, {lng:.6f}"
+    if accuracy is not None:
+        return f"{base} (±{accuracy:.0f}m)"
+    return base
+
+
+def reverse_geocode_location(lat: float, lng: float) -> Optional[str]:
+    url = (
+        "https://nominatim.openstreetmap.org/reverse"
+        f"?format=jsonv2&lat={lat}&lon={lng}&zoom=18&addressdetails=1"
+    )
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "BikePatrolRewards/1.0 (+local-dev)",
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError):
+        return None
+
+    address = payload.get("address", {})
+    display_name = payload.get("display_name")
+    road = address.get("road") or address.get("pedestrian") or address.get("footway")
+    neighbourhood = address.get("neighbourhood") or address.get("suburb") or address.get("quarter")
+    city = address.get("city") or address.get("town") or address.get("village") or address.get("municipality")
+    postcode = address.get("postcode")
+
+    parts = [part for part in [road, neighbourhood, city] if part]
+    if parts:
+        if postcode:
+            parts[-1] = f"{parts[-1]} {postcode}"
+        return ", ".join(parts)
+
+    return display_name
+
+
+def build_location_address(lat: Optional[float], lng: Optional[float], accuracy: Optional[float] = None) -> Optional[str]:
+    if lat is None or lng is None:
+        return None
+
+    rough_address = reverse_geocode_location(lat, lng)
+    if rough_address:
+        return rough_address
+
+    return format_location_text(lat, lng, accuracy)
+
+
+def ensure_report_ids():
+    for index, report in enumerate(REPORTS, start=1):
+        if not report.get("report_id"):
+            report["report_id"] = f"RPT-{index:06d}"
 
 
 def load_env_file():
@@ -198,9 +338,15 @@ def build_user_summary(user: str):
 
 @app.get("/api/status")
 def status():
+    ensure_report_ids()
+    pending_reports = [report for report in REPORTS if report.get("status", "pending") == "pending"]
+    completed_reports = [report for report in REPORTS if report.get("status") == "completed"]
     return {
         "app_name": "Bike Patrol Rewards",
         "report_count": len(REPORTS),
+        "total_reports": len(REPORTS),
+        "pending_reports": pending_reports,
+        "completed_reports": completed_reports,
         "reward_limit_per_day": REWARD_LIMIT_PER_DAY,
         "available_vouchers": AVAILABLE_VOUCHERS,
         "proxy_accounts": [
@@ -211,9 +357,15 @@ def status():
 
 @app.get("/api/reports", response_model=ReportSummary)
 def get_reports():
+    ensure_report_ids()
+    pending_reports = [report for report in REPORTS if report.get("status", "pending") == "pending"]
+    completed_reports = [report for report in REPORTS if report.get("status") == "completed"]
     return {
         "total_reports": len(REPORTS),
         "recent_reports": REPORTS[-10:],
+        "all_reports": REPORTS,
+        "pending_reports": pending_reports,
+        "completed_reports": completed_reports,
     }
 
 @app.get("/api/user-reports")
@@ -224,75 +376,120 @@ def user_reports(authorization: Optional[str] = Header(None)):
 
 @app.post("/api/reports")
 def submit_report(
+    authorization: Optional[str] = Header(None),
     reporter: str = Form(...),
     bike_id: str = Form(...),
     issue_type: str = Form(...),
     description: str = Form(...),
+    location_text: Optional[str] = Form(None),
+    location_address: Optional[str] = Form(None),
+    location_lat: Optional[float] = Form(None),
+    location_lng: Optional[float] = Form(None),
+    location_accuracy: Optional[float] = Form(None),
     outside_zone: bool = Form(False),
     toppled: bool = Form(False),
     faulty: bool = Form(False),
-    image: UploadFile = File(None),
+    image: UploadFile = File(...),
 ):
+    submitted_by = reporter.strip()
+    if authorization:
+        current_user_key = validate_session_token(authorization)
+        current_account = get_user_account(current_user_key)
+        submitted_by = current_account["user"]
+
     image_data = None
     if image:
         content = image.file.read()
         encoded_data = base64.b64encode(content).decode("utf-8")
         image_data = f"data:{image.content_type};base64,{encoded_data}"
     
+    normalized_location_text = location_text or format_location_text(location_lat, location_lng, location_accuracy)
+    normalized_location_address = location_address or build_location_address(location_lat, location_lng, location_accuracy)
+    ai_summary = analyze_report_image_with_llm(
+        image_data,
+        bike_id,
+        issue_type,
+        description,
+        normalized_location_text,
+        normalized_location_address,
+    )
+    ensure_report_ids()
+    report_id = f"RPT-{uuid4().hex[:8].upper()}"
+    
     report_dict = {
-        "reporter": reporter,
+        "report_id": report_id,
+        "reporter": submitted_by,
         "bike_id": bike_id,
         "issue_type": issue_type,
         "description": description,
+        "location_text": normalized_location_text,
+        "location_address": normalized_location_address,
+        "location_lat": location_lat,
+        "location_lng": location_lng,
+        "location_accuracy": location_accuracy,
         "outside_zone": outside_zone,
         "toppled": toppled,
         "faulty": faulty,
         "image": image_data,
+        "ai_summary": ai_summary,
+        "status": "pending",
+        "reviewed_by": None,
+        "review_notes": None,
+        "review_action": None,
     }
     REPORTS.append(report_dict)
-    account = get_user_account(reporter)
+    account = get_user_account(submitted_by)
     account["reports"].append(report_dict)
     return {
         "message": "Report received. Maintenance team alerted.",
         "report": report_dict,
-        "user_summary": build_user_summary(reporter),
+        "user_summary": build_user_summary(submitted_by),
     }
 
-@app.post("/api/validate-report")
-def validate_report(
-    image: UploadFile = File(None),
-    bike_id: str = Form("BK-000"),
-):
-    import random
-    
-    issues = []
-    suggestions = []
-    
-    if image:
-        has_problem = random.choice([True, False])
-        if has_problem:
-            problem_type = random.choice(["illegal_parking", "toppled", "faulty"])
-            if problem_type == "illegal_parking":
-                issues.append("Illegal parking: Bike is outside designated zone")
-                suggestions.append("Dispatch maintenance to move bike into parking area")
-            elif problem_type == "toppled":
-                issues.append("Safety hazard: Bike is toppled")
-                suggestions.append("Send crew to stand the bike upright and inspect it")
-            else:
-                issues.append("Equipment issue: Bike appears faulty")
-                suggestions.append("Create a repair ticket and reserve a replacement")
-        else:
-            issues.append("No major issues detected")
-            suggestions.append("Continue monitoring the area")
-    else:
-        issues.append("No major issues detected")
-        suggestions.append("Continue monitoring the area")
-    
+
+@app.get("/api/reverse-geocode")
+def reverse_geocode_api(lat: float, lng: float, accuracy: Optional[float] = None):
+    location_address = build_location_address(lat, lng, accuracy)
+    location_text = format_location_text(lat, lng, accuracy)
     return {
-        "bike_id": bike_id,
-        "issues": issues,
-        "suggestions": suggestions,
-        "image_analyzed": image is not None,
+        "location_address": location_address,
+        "location_text": location_text,
+        "latitude": lat,
+        "longitude": lng,
+        "accuracy": accuracy,
+    }
+
+
+@app.post("/api/reports/{report_id}/review")
+def review_report(
+    report_id: str,
+    action: str = Form(...),
+    notes: Optional[str] = Form(None),
+    authorization: Optional[str] = Header(None),
+):
+    ensure_report_ids()
+    current_user_key = validate_session_token(authorization)
+    account = get_user_account(current_user_key)
+    if account["role"] not in ["admin", "maintenance"]:
+        raise HTTPException(status_code=403, detail="Only maintenance staff can review reports.")
+
+    report = next((item for item in REPORTS if item.get("report_id") == report_id), None)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found.")
+
+    normalized_action = action.strip().lower()
+    if normalized_action not in ["approve", "reject"]:
+        raise HTTPException(status_code=400, detail="Review action must be approve or reject.")
+
+    report["status"] = "completed"
+    report["reviewed_by"] = current_user_key
+    report["review_notes"] = (notes or "").strip() or None
+    report["review_action"] = normalized_action
+    action_word = "approved" if normalized_action == "approve" else "rejected"
+
+    return {
+        "message": f"Report {action_word} successfully.",
+        "report": report,
     }
 
 @app.post("/api/parking-help")
@@ -467,41 +664,6 @@ def redeem_parking_reward(request: ParkingRedeemRequest):
         "voucher": voucher,
         "parking_points": account["parking_points"],
         "claimed_rewards": account["claimed_rewards"],
-    }
-
-@app.post("/api/ai-check")
-async def ai_check(
-    image: UploadFile = File(...),
-    bike_id: str = Form("BK-000"),
-    outside_zone: bool = Form(False),
-    toppled: bool = Form(False),
-    faulty: bool = Form(False),
-    notes: Optional[str] = Form(None),
-    llm_token: Optional[str] = Form(None),
-):
-    issues = []
-    actions = []
-    if outside_zone:
-        issues.append("Illegal parking detected outside designated zone.")
-        actions.append("Dispatch maintenance to move bike into parking area.")
-    if toppled:
-        issues.append("Toppled bicycle detected.")
-        actions.append("Send crew to stand the bike upright and inspect it.")
-    if faulty:
-        issues.append("Faulty bicycle components detected.")
-        actions.append("Create a repair ticket and reserve a replacement.")
-    if not issues:
-        issues.append("No major issues detected. Continue monitoring the area.")
-        actions.append("Record a clean sweep and keep the route under observation.")
-
-    placeholder_token = llm_token or "PLACEHOLDER_LLM_TOKEN"
-    notes_text = notes or "AI check complete."
-    return {
-        "bike_id": bike_id,
-        "image_filename": image.filename,
-        "issues": issues,
-        "actions": actions,
-        "notes": f"{notes_text} Placeholder token used: {placeholder_token}.",
     }
 
 @app.post("/api/claim-reward")

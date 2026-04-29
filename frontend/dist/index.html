@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bike Patrol Rewards</title>
-  <link rel="stylesheet" crossorigin href="/assets/index-DEOpWObf.css">
+  <link rel="stylesheet" href="/assets/index-BvvFNmeW.css" />
 </head>
 <body>
   <div class="login-screen" id="login-screen">
@@ -90,10 +90,6 @@
           <span class="nav-icon">📋</span>
           Reports
         </button>
-        <button class="nav-item" data-tab="inspect">
-          <span class="nav-icon">🔍</span>
-          AI Inspect
-        </button>
         <button class="nav-item" data-tab="rewards">
           <span class="nav-icon">🏆</span>
           Rewards
@@ -143,7 +139,7 @@
       <div id="dashboard" class="tab-content active">
         <section class="dashboard-section">
           <h1>Bike Patrol Dashboard</h1>
-          <p class="subtitle">Monitor reports, inspections, and rewards in real-time</p>
+          <p class="subtitle">Monitor reports and rewards in real-time</p>
 
           <div class="welcome-card">
             <div>
@@ -163,44 +159,12 @@
               <div class="metric-label">Total Reports</div>
             </div>
             <div class="metric-card">
-              <div class="metric-value" id="reward-limit">3</div>
-              <div class="metric-label">Daily Reward Limit</div>
+              <div class="metric-value" id="status-pending-card">0</div>
+              <div class="metric-label">Pending Reports</div>
             </div>
             <div class="metric-card">
-              <div class="metric-value" id="total-vouchers">0</div>
-              <div class="metric-label">Vouchers Claimed</div>
-            </div>
-          </div>
-
-          <!-- Status Overview -->
-          <div class="overview-section">
-            <h2>Report Status Overview</h2>
-            <div class="status-row">
-              <div class="status-badge">Bike Reports <span class="count" id="status-reports">0</span></div>
-              <div class="status-badge">Inspections Done <span class="count" id="status-inspections">0</span></div>
-              <div class="status-badge">Rewards Claimed <span class="count" id="status-rewards">0</span></div>
-            </div>
-          </div>
-
-          <!-- Recent Reports Table -->
-          <div class="reports-table-section">
-            <h2>Recent Reports</h2>
-            <div class="table-container">
-              <table class="reports-table">
-                <thead>
-                  <tr>
-                    <th>Report ID</th>
-                    <th>Reporter</th>
-                    <th>Bike ID</th>
-                    <th>Issue Type</th>
-                    <th>Description</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="reports-tbody">
-                  <tr><td colspan="6" style="text-align: center; padding: 20px;">No reports yet</td></tr>
-                </tbody>
-              </table>
+              <div class="metric-value" id="status-completed-card">0</div>
+              <div class="metric-label">Completed Reports</div>
             </div>
           </div>
         </section>
@@ -209,8 +173,8 @@
       <!-- Reports Tab -->
       <div id="reports" class="tab-content">
         <section class="reports-section">
-          <h1>Submit Report</h1>
-          <div class="form-container">
+          <h1 id="reports-section-title">Submit Report</h1>
+          <div class="form-container" id="report-submit-section">
             <form id="report-form">
               <div class="form-row">
                 <div class="form-group">
@@ -241,55 +205,52 @@
               </div>
 
               <div class="form-group">
-                <label>Upload image (optional)</label>
-                <input type="file" id="report-image" accept="image/*" />
+                <label>Upload image *</label>
+                <input type="file" id="report-image" accept="image/*" required />
               </div>
-              <div id="validation-result" class="message-box"></div>
 
-              <button type="submit" class="btn-primary" id="submit-report-btn" disabled>Send report</button>
+              <div class="form-group">
+                <label>Location</label>
+                <div id="report-location-status" class="message-box" style="display:block; margin-top:0;">Location will be requested when you submit your report.</div>
+              </div>
+
+              <button type="submit" class="btn-primary" id="submit-report-btn">Send report</button>
             </form>
             <div id="report-message" class="message-box"></div>
           </div>
-        </section>
-      </div>
-
-      <!-- Inspect Tab -->
-      <div id="inspect" class="tab-content">
-        <section class="inspect-section">
-          <h1>AI-Style Inspection</h1>
-          <p class="subtitle">Upload an image for AI-powered bike analysis</p>
-
-          <div class="form-container">
-            <form id="ai-check-form">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Upload image *</label>
-                  <input type="file" id="inspection-image" accept="image/*" required />
-                </div>
-                <div class="form-group">
-                  <label>Bike ID</label>
-                  <input type="text" id="inspect-bike-id" placeholder="e.g. BK-101" />
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group">
-                  <label>LLM Token (placeholder)</label>
-                  <input type="text" id="llm-token" placeholder="PLACEHOLDER_LLM_TOKEN" />
-                </div>
-              </div>
-
-              <div class="form-group checkbox-group">
-                <label><input type="checkbox" id="inspect-outside-zone" /> Outside parking zone</label>
-                <label><input type="checkbox" id="inspect-toppled" /> Bike toppled</label>
-                <label><input type="checkbox" id="inspect-faulty" /> Faulty bike</label>
-              </div>
-
-              <button type="button" id="ai-check-btn" class="btn-primary">Run AI inspection</button>
-            </form>
-            <div id="inspection-message" class="message-box"></div>
+          <div class="reports-table-section hidden" id="staff-reports-section">
+            <h2>User Reports</h2>
+            <p class="subtitle">View submitted reports from all users.</p>
+            <div class="table-container">
+              <table class="reports-table">
+                <thead>
+                  <tr>
+                    <th>Report ID</th>
+                    <th>Reporter</th>
+                    <th>Bike ID</th>
+                    <th>Issue Type</th>
+                    <th>Description</th>
+                    <th>Location</th>
+                    <th>AI Review</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="staff-reports-tbody">
+                  <tr><td colspan="8" style="text-align: center; padding: 20px;">No reports yet</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
+      </div>
+      <div id="report-review-modal" class="modal-overlay hidden">
+        <div class="modal-content report-review-modal">
+          <div class="modal-header">
+            <h2>Review Report</h2>
+            <button class="modal-close-btn" type="button" id="close-report-review-modal">✕</button>
+          </div>
+          <div class="modal-body" id="report-review-body"></div>
+        </div>
       </div>
 
       <!-- Rewards Tab -->
@@ -618,6 +579,7 @@
       currentSession = { token, user, role };
       localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(currentSession));
       localStorage.removeItem(GUEST_MODE_KEY);
+      document.getElementById('reporter').value = user;
       document.getElementById('sidebar-login-user').value = user;
       document.getElementById('sidebar-login-password').value = '';
       document.getElementById('sidebar-account-btn').classList.add('hidden');
@@ -629,6 +591,7 @@
       } else {
         document.getElementById('sidebar-login-status').innerHTML = `Logged in as <strong>${user}</strong> (${role}).`;
       }
+      applyRoleSpecificUI(role);
     }
 
     function openPhotoEditor(imageSrc) {
@@ -766,6 +729,54 @@
       }
     }
 
+    function isStaffRole(role) {
+      return role === 'admin' || role === 'maintenance';
+    }
+
+    function applyRoleSpecificUI(role) {
+      const staffMode = isStaffRole(role);
+      const maintenanceMode = role === 'maintenance';
+      const reportHistoryBtn = document.getElementById('report-history-btn');
+      const reportSubmitSection = document.getElementById('report-submit-section');
+      const staffReportsSection = document.getElementById('staff-reports-section');
+      const reportsTitle = document.getElementById('reports-section-title');
+      const rewardsNav = document.querySelector('.nav-item[data-tab="rewards"]');
+      const rewardsTab = document.getElementById('rewards');
+
+      if (reportHistoryBtn) {
+        reportHistoryBtn.classList.toggle('hidden', staffMode);
+      }
+      if (reportSubmitSection) {
+        reportSubmitSection.classList.toggle('hidden', staffMode);
+      }
+      if (staffReportsSection) {
+        staffReportsSection.classList.toggle('hidden', !staffMode);
+      }
+      if (reportsTitle) {
+        reportsTitle.textContent = staffMode ? 'User Reports' : 'Submit Report';
+      }
+      if (rewardsNav) {
+        rewardsNav.classList.toggle('hidden', maintenanceMode);
+      }
+      if (rewardsTab) {
+        rewardsTab.classList.toggle('hidden', maintenanceMode);
+      }
+
+      if (maintenanceMode) {
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab && activeTab.id === 'rewards') {
+          document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+          document.querySelector('.nav-item[data-tab="reports"]')?.classList.add('active');
+          document.getElementById('reports')?.classList.add('active');
+        }
+      }
+
+      if (staffMode) {
+        loadStaffReports();
+      }
+    }
+
     function setAvatar(element, photo, displayName) {
       if (photo) {
         element.style.backgroundImage = `url(${photo})`;
@@ -800,9 +811,11 @@
       updateUserHeader(data);
       document.getElementById('sidebar-login-user').value = data.user;
       document.getElementById('login-screen-email').value = data.user;
+      document.getElementById('reporter').value = data.user;
       document.getElementById('account-user').value = data.user;
       document.getElementById('reward-user').value = data.user;
       loadRewardUsePanel();
+      applyRoleSpecificUI(data.role);
       return true;
     }
 
@@ -819,6 +832,7 @@
             document.getElementById('sidebar-logout-fixed').classList.remove('hidden');
             document.getElementById('sidebar-logout-btn').classList.remove('hidden');
             document.getElementById('sidebar-login-status').innerHTML = `Logged in as <strong>${currentSession.user}</strong> (${currentSession.role}).`;
+            applyRoleSpecificUI(currentSession.role);
             const restored = await loadCurrentAccountProfile();
             if (restored) {
               hideLoginScreen();
@@ -844,6 +858,7 @@
         profile_photo: null,
         settings: { theme: 'light', font_size: 'medium' },
       });
+      applyRoleSpecificUI('user');
       resetLoginForm();
       if (guestSaved === 'true') {
         isGuestMode = true;
@@ -887,36 +902,123 @@
     async function loadDashboard() {
       const res = await fetch(`${API_BASE}/api/status`);
       const data = await res.json();
-      document.getElementById('total-reports').textContent = data.report_count;
-      document.getElementById('reward-limit').textContent = data.reward_limit_per_day;
-      document.getElementById("total-vouchers").textContent = data.report_count || 0;
-      document.getElementById("status-reports").textContent = data.report_count || 0;
-      
-      loadReports();
+      document.getElementById('total-reports').textContent = data.total_reports ?? data.report_count ?? 0;
+      document.getElementById("status-pending-card").textContent = data.pending_reports?.length || 0;
+      document.getElementById("status-completed-card").textContent = data.completed_reports?.length || 0;
     }
 
-    async function loadReports() {
-      const res = await fetch(`${API_BASE}/api/reports`);
+    let staffReportMap = new Map();
+
+    function openReportReviewModal(report) {
+      const modal = document.getElementById('report-review-modal');
+      const body = document.getElementById('report-review-body');
+      if (!modal || !body) return;
+
+      const reportedLocation = report.location_address || report.location_text || 'Not provided';
+
+      const imageMarkup = report.image
+        ? `<img src="${report.image}" alt="Report image" class="report-review-image" />`
+        : '<div class="report-review-placeholder">No image attached.</div>';
+
+      body.innerHTML = `
+        <div class="report-review-grid">
+          <div class="report-review-media">${imageMarkup}</div>
+          <div class="report-review-details">
+            <div><strong>Report ID:</strong> ${report.report_id || 'N/A'}</div>
+            <div><strong>Reporter:</strong> ${report.reporter}</div>
+            <div><strong>Bike ID:</strong> ${report.bike_id}</div>
+            <div><strong>Issue:</strong> ${report.issue_type.replace('_', ' ')}</div>
+            <div><strong>Description:</strong> ${report.description}</div>
+            <div><strong>Location:</strong> ${reportedLocation}</div>
+            <div><strong>AI review:</strong> ${report.ai_summary || 'Pending review'}</div>
+            <div><strong>Status:</strong> ${report.status || 'pending'}</div>
+            ${report.review_action ? `<div><strong>Decision:</strong> ${report.review_action}</div>` : ''}
+            ${report.reviewed_by ? `<div><strong>Reviewed by:</strong> ${report.reviewed_by}</div>` : ''}
+            ${report.review_notes ? `<div><strong>Notes:</strong> ${report.review_notes}</div>` : ''}
+          </div>
+        </div>
+        <div class="report-review-actions">
+          <button type="button" class="btn-primary" id="approve-report-btn">Approve</button>
+          <button type="button" class="btn-secondary" id="reject-report-btn">Reject</button>
+        </div>
+      `;
+
+      modal.classList.remove('hidden');
+
+      const approveBtn = document.getElementById('approve-report-btn');
+      const rejectBtn = document.getElementById('reject-report-btn');
+      if (report.status === 'completed') {
+        approveBtn.style.display = 'none';
+        rejectBtn.style.display = 'none';
+      } else {
+        approveBtn.onclick = () => reviewReport(report.report_id, 'approve');
+        rejectBtn.onclick = () => reviewReport(report.report_id, 'reject');
+      }
+    }
+
+    async function reviewReport(reportId, action) {
+      if (!currentSession?.token) return;
+
+      const formData = new FormData();
+      formData.append('action', action);
+
+      const res = await fetch(`${API_BASE}/api/reports/${encodeURIComponent(reportId)}/review`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: formData,
+      });
+
       const data = await res.json();
-      const tbody = document.getElementById('reports-tbody');
-      
-      if (!data.total_reports) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No reports yet</td></tr>';
+      if (!res.ok) {
+        document.getElementById('report-review-body').innerHTML = `<p style="color: #ef4444;">${data.detail || 'Unable to update report.'}</p>`;
         return;
       }
 
-      tbody.innerHTML = data.recent_reports.map((r) => {
+      document.getElementById('report-review-modal').classList.add('hidden');
+      loadStaffReports();
+      loadDashboard();
+    }
+
+    async function loadStaffReports() {
+      const tbody = document.getElementById('staff-reports-tbody');
+      if (!tbody) return;
+
+      const res = await fetch(`${API_BASE}/api/reports`);
+      const data = await res.json();
+
+      const reports = data.all_reports || data.recent_reports || [];
+      staffReportMap = new Map(reports.map((report) => [report.report_id, report]));
+
+      if (!reports.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">No reports yet</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = reports.map((r) => {
         const reportId = r.report_id || generateReportId();
+        const reportedLocation = r.location_address || r.location_text || 'Not provided';
+        const reviewStatus = r.status === 'completed'
+          ? (r.review_action ? r.review_action.charAt(0).toUpperCase() + r.review_action.slice(1) : 'Completed')
+          : 'Pending';
         return `
-        <tr>
+        <tr class="report-row-clickable" data-report-id="${reportId}">
           <td>${reportId}</td>
           <td>${r.reporter}</td>
           <td>${r.bike_id}</td>
           <td><span class="badge">${r.issue_type.replace('_', ' ')}</span></td>
           <td>${r.description}</td>
-          <td><span class="status-ok">●</span> Received</td>
+          <td>${reportedLocation}</td>
+          <td>${r.ai_summary || 'Pending review'}</td>
+          <td><span class="status-ok">●</span> ${reviewStatus}</td>
         </tr>
       `}).join('');
+
+      tbody.querySelectorAll('tr[data-report-id]').forEach((row) => {
+        row.addEventListener('click', () => {
+          const report = staffReportMap.get(row.dataset.reportId);
+          if (report) openReportReviewModal(report);
+        });
+      });
     }
 
     function generateReportId() {
@@ -972,6 +1074,7 @@
         <div class="report-history-list">
           ${data.reports.map((r) => {
             const reportId = r.report_id || generateReportId();
+            const reportedLocation = r.location_address || r.location_text || 'Not provided';
             return `
             <div class="report-history-item">
               <div class="report-id-badge">${reportId}</div>
@@ -985,6 +1088,14 @@
                 <div class="report-info">
                   <strong>Description:</strong> ${r.description}
                 </div>
+                <div class="report-info">
+                  <strong>Location:</strong> ${reportedLocation}
+                </div>
+                ${r.ai_summary ? `
+                <div class="report-info">
+                  <strong>AI review:</strong> ${r.ai_summary}
+                </div>
+                ` : ''}
               </div>
               <div class="report-status"><span class="status-ok">●</span> Received</div>
             </div>
@@ -1071,56 +1182,51 @@
       }
     });
 
-    // Report form
-    let reportValidationState = {
-      hasProblems: false,
-    };
+    function requestReportLocation() {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error('Location services are not supported in this browser.'));
+          return;
+        }
 
-    async function validateReportImage() {
-      const imageInput = document.getElementById('report-image');
-      const bikeId = document.getElementById('bike-id').value.trim();
-      
-      if (!imageInput.files.length) {
-        document.getElementById('validation-result').innerHTML = '<strong>⚠ Upload an image to analyze the report.</strong>';
-        reportValidationState.hasProblems = false;
-        document.getElementById('submit-report-btn').disabled = true;
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('bike_id', bikeId || 'BK-000');
-      formData.append('image', imageInput.files[0]);
-
-      const res = await fetch(`${API_BASE}/api/validate-report`, {
-        method: 'POST',
-        body: formData,
+        navigator.geolocation.getCurrentPosition(
+          (position) => resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+          }),
+          (error) => reject(error),
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+        );
       });
-
-      const data = await res.json();
-      const hasRealProblems = data.issues.some(i => i !== 'No major issues detected');
-      reportValidationState.hasProblems = hasRealProblems;
-
-      const resultHtml = `
-        <strong>${hasRealProblems ? '✓ Problems detected' : '⚠ No problems detected'}</strong><br>
-        ${data.issues.map(i => `• ${i}`).join('<br>')}<br>
-        <em style="font-size: 12px;">Suggestions: ${data.suggestions.map(s => s).join('; ')}</em>
-      `;
-      document.getElementById('validation-result').innerHTML = resultHtml;
-      document.getElementById('submit-report-btn').disabled = !hasRealProblems;
     }
 
-    document.getElementById('report-image').addEventListener('change', validateReportImage);
+    async function resolveReportAddress(reportLocation) {
+      const params = new URLSearchParams({
+        lat: reportLocation.latitude.toString(),
+        lng: reportLocation.longitude.toString(),
+        accuracy: reportLocation.accuracy.toString(),
+      });
+
+      const res = await fetch(`${API_BASE}/api/reverse-geocode?${params.toString()}`);
+      if (!res.ok) {
+        return null;
+      }
+
+      const data = await res.json();
+      return data.location_address || null;
+    }
 
     document.getElementById('report-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      
-      if (!reportValidationState.hasProblems) {
-        document.getElementById('report-message').innerHTML = '<strong>⚠ AI validation must detect problems before submitting.</strong>';
+
+      if (!e.target.reportValidity()) {
         return;
       }
 
       const issueType = document.getElementById('issue-type').value;
       let description = '';
+      const reporterValue = document.getElementById('reporter').value.trim() || currentSession?.user || '';
       
       if (issueType === 'others') {
         description = document.getElementById('custom-issue-description').value.trim();
@@ -1132,11 +1238,40 @@
         description = issueType.replace('_', ' ');
       }
 
+      document.getElementById('report-location-status').textContent = 'Requesting your location...';
+      let reportLocation;
+      try {
+        reportLocation = await requestReportLocation();
+      } catch (error) {
+        document.getElementById('report-location-status').textContent = error?.message || 'Location permission is required to submit reports.';
+        return;
+      }
+      document.getElementById('report-location-status').textContent = 'Resolving rough address...';
+
+      let locationAddress = null;
+      try {
+        locationAddress = await resolveReportAddress(reportLocation);
+      } catch (error) {
+        locationAddress = null;
+      }
+
+      const locationDisplay = locationAddress
+        ? `${locationAddress} • ${reportLocation.latitude.toFixed(6)}, ${reportLocation.longitude.toFixed(6)} (±${Math.round(reportLocation.accuracy)}m)`
+        : `Lat ${reportLocation.latitude.toFixed(6)}, Lng ${reportLocation.longitude.toFixed(6)} (±${Math.round(reportLocation.accuracy)}m)`;
+      document.getElementById('report-location-status').textContent = `Location captured: ${locationDisplay}`;
+
       const formData = new FormData();
-      formData.append('reporter', document.getElementById('reporter').value.trim());
+      formData.append('reporter', reporterValue);
       formData.append('bike_id', document.getElementById('bike-id').value.trim());
       formData.append('issue_type', issueType);
       formData.append('description', description);
+      formData.append('location_lat', reportLocation.latitude.toString());
+      formData.append('location_lng', reportLocation.longitude.toString());
+      formData.append('location_accuracy', reportLocation.accuracy.toString());
+      formData.append('location_text', `Lat ${reportLocation.latitude.toFixed(6)}, Lng ${reportLocation.longitude.toFixed(6)} (±${Math.round(reportLocation.accuracy)}m)`);
+      if (locationAddress) {
+        formData.append('location_address', locationAddress);
+      }
       
       const imageInput = document.getElementById('report-image');
       if (imageInput.files.length > 0) {
@@ -1145,45 +1280,32 @@
 
       const res = await fetch(`${API_BASE}/api/reports`, {
         method: 'POST',
+        headers: { ...authHeaders() },
         body: formData,
       });
 
       const data = await res.json();
       document.getElementById('report-message').innerHTML = `<strong>✓ ${data.message}</strong>`;
       document.getElementById('report-form').reset();
+      if (currentSession?.user) {
+        document.getElementById('reporter').value = currentSession.user;
+      }
       document.getElementById('custom-issue-group').classList.add('hidden');
-      document.getElementById('validation-result').innerHTML = '';
-      document.getElementById('submit-report-btn').disabled = true;
-      reportValidationState.hasProblems = false;
-      loadReports();
+      document.getElementById('report-location-status').textContent = 'Location will be requested when you submit your report.';
+      loadDashboard();
+      if (document.getElementById('report-history-modal') && !document.getElementById('report-history-modal').classList.contains('hidden')) {
+        fetchUserReports();
+      }
     });
 
-    // AI Check
-    document.getElementById('ai-check-btn').addEventListener('click', async () => {
-      const imageInput = document.getElementById('inspection-image');
-      if (!imageInput.files.length) {
-        document.getElementById('inspection-message').innerHTML = '<strong>⚠ Please upload an image first.</strong>';
-        return;
+    document.getElementById('close-report-review-modal')?.addEventListener('click', () => {
+      document.getElementById('report-review-modal')?.classList.add('hidden');
+    });
+
+    document.getElementById('report-review-modal')?.addEventListener('click', (event) => {
+      if (event.target.id === 'report-review-modal') {
+        document.getElementById('report-review-modal')?.classList.add('hidden');
       }
-
-      const formData = new FormData();
-      formData.append('image', imageInput.files[0]);
-      formData.append('bike_id', document.getElementById('inspect-bike-id').value.trim() || 'BK-000');
-      formData.append('outside_zone', document.getElementById('inspect-outside-zone').checked ? 'true' : 'false');
-      formData.append('toppled', document.getElementById('inspect-toppled').checked ? 'true' : 'false');
-      formData.append('faulty', document.getElementById('inspect-faulty').checked ? 'true' : 'false');
-      formData.append('llm_token', document.getElementById('llm-token').value.trim() || 'PLACEHOLDER_LLM_TOKEN');
-
-      const res = await fetch(`${API_BASE}/api/ai-check`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await res.json();
-      document.getElementById('inspection-message').innerHTML = `
-        <strong>✓ AI Inspection Complete</strong><br>
-        ${data.issues.map(i => `• ${i}`).join('<br>')}
-      `;
     });
 
     // Rewards
