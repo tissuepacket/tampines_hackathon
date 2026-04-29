@@ -17,10 +17,10 @@
         </div>
         <div class="login-screen-form" id="login-form">
           <label>Email</label>
-          <input type="text" id="login-screen-email" placeholder="Enter your email" autocomplete="username" />
+          <input type="text" id="login-screen-email" placeholder="Enter your email" autocomplete="off" autocapitalize="none" spellcheck="false" name="login-email" />
           <label>Password</label>
           <div class="password-input-wrapper">
-            <input type="password" id="login-screen-password" placeholder="Enter your password" autocomplete="current-password" />
+            <input type="password" id="login-screen-password" placeholder="Enter your password" autocomplete="off" autocapitalize="none" spellcheck="false" name="login-password" />
             <button type="button" id="password-toggle-btn" class="password-toggle-btn" aria-label="Show password">⊘</button>
           </div>
           <div id="login-error-msg" class="login-error hidden"></div>
@@ -42,6 +42,28 @@
           <div class="login-form-footer">
             <span>Already have an account?</span>
             <button type="button" id="back-to-login-btn" class="link-button">Log in</button>
+          </div>
+        </div>
+
+        <div class="dev-login-panel hidden" id="dev-login-panel">
+          <h2>Quick Login</h2>
+          <p>Select a role to sign in instantly using the sample accounts from the README.</p>
+          <div class="dev-login-grid">
+            <button type="button" class="dev-login-card" data-dev-role="user">
+              <span class="dev-login-role">User</span>
+              <span class="dev-login-email">user@bikepatrol.test</span>
+              <span class="dev-login-action">Login as user</span>
+            </button>
+            <button type="button" class="dev-login-card" data-dev-role="admin">
+              <span class="dev-login-role">Admin</span>
+              <span class="dev-login-email">admin@bikepatrol.test</span>
+              <span class="dev-login-action">Login as admin</span>
+            </button>
+            <button type="button" class="dev-login-card" data-dev-role="maintenance">
+              <span class="dev-login-role">Maintenance</span>
+              <span class="dev-login-email">maintenance@bikepatrol.test</span>
+              <span class="dev-login-action">Login as maintenance</span>
+            </button>
           </div>
         </div>
 
@@ -148,25 +170,9 @@
             </div>
             <div class="welcome-actions">
               <button class="btn-primary">Get started</button>
-              <button class="btn-secondary">See insights</button>
             </div>
           </div>
 
-          <!-- Key Metrics -->
-          <div class="metrics-grid">
-            <div class="metric-card">
-              <div class="metric-value" id="total-reports">0</div>
-              <div class="metric-label">Total Reports</div>
-            </div>
-            <div class="metric-card">
-              <div class="metric-value" id="status-pending-card">0</div>
-              <div class="metric-label">Pending Reports</div>
-            </div>
-            <div class="metric-card">
-              <div class="metric-value" id="status-completed-card">0</div>
-              <div class="metric-label">Completed Reports</div>
-            </div>
-          </div>
         </section>
       </div>
 
@@ -256,62 +262,49 @@
       <!-- Rewards Tab -->
       <div id="rewards" class="tab-content">
         <section class="rewards-section">
-          <h1>Claim Rewards</h1>
-          <p class="subtitle">Redeem your CDC vouchers for reporting and participation</p>
+          <h1>Report Rewards</h1>
+          <p class="subtitle">Rewards are issued after maintenance approves your report.</p>
 
           <div class="rewards-container">
             <div class="form-container">
-              <form id="reward-form">
-                <div class="form-group">
-                  <label>Your name or email *</label>
-                  <input type="text" id="reward-user" required placeholder="e.g. jane@example.com" />
-                </div>
-                <button type="button" id="claim-reward-btn" class="btn-primary">Claim CDC Voucher</button>
-              </form>
-              <div id="reward-status" class="message-box"></div>
-
               <div class="account-box">
-                <h3>Account & Parking Rewards</h3>
-                <form id="account-form">
-                  <div class="form-group">
-                    <label>Lookup user account *</label>
-                    <input type="text" id="account-user" required placeholder="e.g. jane@example.com" />
-                  </div>
-                  <button type="submit" class="btn-secondary">Load account history</button>
-                </form>
-                <div class="form-group">
-                  <label>Bike ID for parking help</label>
-                  <input type="text" id="parking-bike-id" placeholder="e.g. BK-101" />
+                <h3>How To Earn Rewards</h3>
+                <p class="small-text" style="margin-bottom: 12px;">
+                  Submit a report with a photo and location, then wait for maintenance to approve it.
+                </p>
+                <div class="message-box" style="display:block;">
+                  Approved reports automatically unlock voucher rewards in this panel.
                 </div>
-                <div class="form-group">
-                  <label>Notes (optional)</label>
-                  <input type="text" id="parking-notes" placeholder="Helped rearrange the bike inside the spot" />
-                </div>
-                <button type="button" id="parking-help-btn" class="btn-secondary">Log parking help</button>
-                <button type="button" id="redeem-parking-btn" class="btn-secondary">Redeem 1 parking point</button>
-                <div id="account-summary" class="message-box"></div>
               </div>
+              <div id="account-summary" class="message-box hidden"></div>
             </div>
 
-            <!-- Available Vouchers -->
-            <div class="vouchers-display" id="reward-use-panel">
-                <h3>Available Vouchers</h3>
-                <div class="voucher-list">
-                  <div class="voucher-item">🍔 CDC Food Voucher</div>
-                  <div class="voucher-item">🛍️ CDC Shopping Discount</div>
-                  <div class="voucher-item">🚌 CDC Transport Subsidy</div>
-                  <div class="voucher-item">🔧 CDC Bike Care Coupon</div>
+            <div class="vouchers-display">
+                <h3>Reward Types</h3>
+                <div class="reward-type-grid">
+                  <div class="reward-type-card">
+                    <div class="reward-type-icon">🍔</div>
+                    <div class="reward-type-title">CDC Food Voucher</div>
+                    <div class="reward-type-desc">Use this for food and drinks at participating merchants.</div>
+                  </div>
+                  <div class="reward-type-card">
+                    <div class="reward-type-icon">🛍️</div>
+                    <div class="reward-type-title">CDC Shopping Discount</div>
+                    <div class="reward-type-desc">Redeem for everyday shopping savings and small purchases.</div>
+                  </div>
+                  <div class="reward-type-card">
+                    <div class="reward-type-icon">🚌</div>
+                    <div class="reward-type-title">CDC Transport Subsidy</div>
+                    <div class="reward-type-desc">Helps offset travel and commuting costs.</div>
+                  </div>
+                  <div class="reward-type-card">
+                    <div class="reward-type-icon">🔧</div>
+                    <div class="reward-type-title">CDC Bike Care Coupon</div>
+                    <div class="reward-type-desc">A reward for bike upkeep, repairs, or maintenance support.</div>
+                  </div>
                 </div>
-
-                <div class="reward-use-panel-inner">
-                  <h3>Reward Use</h3>
-                  <div id="reward-use-instructions" class="reward-use-text">
-                    Claim a voucher, then use it here to apply the reward to your account.
-                  </div>
-                  <div id="claimed-rewards-list" class="claimed-rewards-list">
-                    <p class="small-text">No claimed rewards yet.</p>
-                  </div>
-                  <div id="reward-use-status" class="message-box tiny-box"></div>
+                <div class="reward-note">
+                  Approved report rewards will appear in your account automatically after maintenance review.
                 </div>
               </div>
             </div>
@@ -428,6 +421,7 @@
     const GUEST_MODE_KEY = 'bikepatrol_guest';
     let currentSession = null;
     let isGuestMode = false;
+    let devLoginMode = false;
     let cropScale = 1;
     let cropOffset = { x: 0, y: 0 };
     let cropDragging = false;
@@ -441,6 +435,8 @@
     function showLoginScreen() {
       document.getElementById('login-screen').classList.remove('hidden');
       document.body.classList.add('login-active');
+      applyLoginMode();
+      window.setTimeout(clearLoginCredentials, 0);
     }
 
     function hideLoginScreen() {
@@ -489,6 +485,13 @@
       document.querySelectorAll('.shake').forEach((el) => el.classList.remove('shake'));
     }
 
+    function clearLoginCredentials() {
+      const loginEmail = document.getElementById('login-screen-email');
+      const loginPassword = document.getElementById('login-screen-password');
+      if (loginEmail) loginEmail.value = '';
+      if (loginPassword) loginPassword.value = '';
+    }
+
     function toggleRegisterPanel() {
       const loginForm = document.getElementById('login-form');
       const registerForm = document.getElementById('register-form');
@@ -510,6 +513,44 @@
       
       clearLoginError();
       document.getElementById('login-screen-status').innerHTML = '';
+    }
+
+    function applyLoginMode() {
+      const loginForm = document.getElementById('login-form');
+      const registerForm = document.getElementById('register-form');
+      const devLoginPanel = document.getElementById('dev-login-panel');
+      const formHeader = document.getElementById('form-header');
+      const isDev = Boolean(devLoginMode);
+
+      loginForm?.classList.toggle('hidden', isDev);
+      registerForm?.classList.add('hidden');
+      devLoginPanel?.classList.toggle('hidden', !isDev);
+      formHeader?.classList.toggle('hidden', isDev);
+
+      const loginScreenCard = document.querySelector('.login-screen-card');
+      loginScreenCard?.classList.toggle('dev-mode', isDev);
+
+      if (isDev) {
+        document.getElementById('login-screen-status').innerHTML = '';
+      }
+    }
+
+    async function handleDevLogin(role) {
+      const res = await fetch(`${API_BASE}/api/dev-login/${encodeURIComponent(role)}`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showLoginError(data.detail || 'Dev login failed.');
+        return false;
+      }
+      setSession(data.token, data.user, data.role, data.account);
+      document.getElementById('account-summary').innerHTML = `<strong>Logged in as ${data.account.display_name} (${data.role}).</strong>`;
+      updateUserHeader(data.account);
+      hideLoginScreen();
+      document.getElementById('sidebar-account-btn').classList.add('hidden');
+      loadRewardUsePanel();
+      return true;
     }
 
     async function registerAccount() {
@@ -535,8 +576,6 @@
         return false;
       }
       setSession(data.token, data.user, data.role, data.account);
-      document.getElementById('account-user').value = data.user;
-      document.getElementById('reward-user').value = data.user;
       document.getElementById('account-summary').innerHTML = `<strong>Logged in as ${data.account.display_name} (${data.role}).</strong>`;
       updateUserHeader(data.account);
       hideLoginScreen();
@@ -565,8 +604,6 @@
         return false;
       }
       setSession(data.token, data.user, data.role, data.account);
-      document.getElementById('account-user').value = data.user;
-      document.getElementById('reward-user').value = data.user;
       document.getElementById('account-summary').innerHTML = `<strong>Logged in as ${data.account.display_name} (${data.role}).</strong>`;
       updateUserHeader(data.account);
       hideLoginScreen();
@@ -574,6 +611,12 @@
       loadRewardUsePanel();
       return true;
     }
+
+    document.getElementById('dev-login-panel')?.addEventListener('click', async (event) => {
+      const button = event.target.closest('.dev-login-card');
+      if (!button) return;
+      await handleDevLogin(button.dataset.devRole);
+    });
 
     function setSession(token, user, role, account = null) {
       currentSession = { token, user, role };
@@ -691,6 +734,7 @@
       document.getElementById('sidebar-account-btn').classList.remove('hidden');
       document.getElementById('sidebar-logout-fixed').classList.add('hidden');
       document.getElementById('sidebar-logout-btn').classList.add('hidden');
+      clearLoginCredentials();
       updateUserHeader({ user: 'Guest', display_name: 'Guest', role: 'Not signed in', profile_photo: null, settings: { theme: 'light', font_size: 'medium' } });
       resetLoginForm();
       showLoginScreen();
@@ -810,10 +854,7 @@
       localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(currentSession));
       updateUserHeader(data);
       document.getElementById('sidebar-login-user').value = data.user;
-      document.getElementById('login-screen-email').value = data.user;
       document.getElementById('reporter').value = data.user;
-      document.getElementById('account-user').value = data.user;
-      document.getElementById('reward-user').value = data.user;
       loadRewardUsePanel();
       applyRoleSpecificUI(data.role);
       return true;
@@ -827,7 +868,6 @@
           currentSession = JSON.parse(saved);
           if (currentSession?.token) {
             document.getElementById('sidebar-login-user').value = currentSession.user || '';
-            document.getElementById('login-screen-email').value = currentSession.user || '';
             document.getElementById('sidebar-account-btn').classList.add('hidden');
             document.getElementById('sidebar-logout-fixed').classList.remove('hidden');
             document.getElementById('sidebar-logout-btn').classList.remove('hidden');
@@ -851,6 +891,7 @@
       document.getElementById('sidebar-account-btn').classList.remove('hidden');
       document.getElementById('sidebar-logout-fixed').classList.add('hidden');
       document.getElementById('sidebar-logout-btn').classList.add('hidden');
+      clearLoginCredentials();
       updateUserHeader({
         user: 'Guest',
         display_name: 'Guest',
@@ -860,6 +901,7 @@
       });
       applyRoleSpecificUI('user');
       resetLoginForm();
+      clearLoginCredentials();
       if (guestSaved === 'true') {
         isGuestMode = true;
         hideLoginScreen();
@@ -902,9 +944,19 @@
     async function loadDashboard() {
       const res = await fetch(`${API_BASE}/api/status`);
       const data = await res.json();
-      document.getElementById('total-reports').textContent = data.total_reports ?? data.report_count ?? 0;
-      document.getElementById("status-pending-card").textContent = data.pending_reports?.length || 0;
-      document.getElementById("status-completed-card").textContent = data.completed_reports?.length || 0;
+    }
+
+    async function loadAppConfig() {
+      try {
+        const res = await fetch(`${API_BASE}/api/status`);
+        if (res.ok) {
+          const data = await res.json();
+          devLoginMode = Boolean(data.dev_login_mode);
+        }
+      } catch {
+        devLoginMode = false;
+      }
+      applyLoginMode();
     }
 
     let staffReportMap = new Map();
@@ -1106,20 +1158,26 @@
     }
 
     async function loadRewardUsePanel() {
-      const user = document.getElementById('reward-user').value.trim() || currentSession?.user;
+      const list = document.getElementById('claimed-rewards-list');
+      const instructions = document.getElementById('reward-use-instructions');
+      const status = document.getElementById('reward-use-status');
+      if (!list || !instructions || !status) {
+        return;
+      }
+
+      const user = currentSession?.user;
       if (!user) {
-        document.getElementById('claimed-rewards-list').innerHTML = '<p class="small-text">Enter your email to show claimed rewards.</p>';
+        list.innerHTML = '<p class="small-text">Log in to view approved rewards.</p>';
         return;
       }
 
       const res = await fetch(`${API_BASE}/api/rewards/${encodeURIComponent(user)}`);
       if (!res.ok) {
-        document.getElementById('claimed-rewards-list').innerHTML = '<p class="small-text">Unable to load reward status.</p>';
+        list.innerHTML = '<p class="small-text">Unable to load reward status.</p>';
         return;
       }
 
       const data = await res.json();
-      const list = document.getElementById('claimed-rewards-list');
       const claimed = data.claimed_rewards || [];
       const used = data.used_rewards || [];
 
@@ -1134,11 +1192,10 @@
         `).join('');
       }
 
-      const instructions = document.getElementById('reward-use-instructions');
       if (used.length > 0) {
         instructions.innerHTML = `You have used ${used.length} reward${used.length === 1 ? '' : 's'} already. Choose a claimed reward to use.`;
       } else {
-        instructions.innerHTML = 'Claim a voucher, then use it here to apply the reward to your account.';
+        instructions.innerHTML = 'Approved reports will add rewards here automatically. Use them here to apply the reward to your account.';
       }
     }
 
@@ -1162,7 +1219,6 @@
       loadRewardUsePanel();
     }
 
-    document.getElementById('reward-user')?.addEventListener('input', () => loadRewardUsePanel());
     document.getElementById('reward-use-panel')?.addEventListener('click', async (event) => {
       const button = event.target.closest('.use-reward-btn');
       if (!button) return;
@@ -1309,34 +1365,6 @@
     });
 
     // Rewards
-    document.getElementById('claim-reward-btn').addEventListener('click', async () => {
-      const user = document.getElementById('reward-user').value.trim();
-      if (!user) {
-        document.getElementById('reward-status').innerHTML = '<strong>⚠ Enter a user name or email.</strong>';
-        return;
-      }
-
-      const res = await fetch(`${API_BASE}/api/claim-reward`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user, action: 'claim' }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        document.getElementById('reward-status').innerHTML = `<strong>⚠ ${data.detail}</strong>`;
-        return;
-      }
-
-      document.getElementById('reward-status').innerHTML = `
-        <strong>✓ ${data.message}</strong><br>
-        You received: <em>${data.voucher}</em><br>
-        Claims today: ${data.claimed_today}/${data.limit}<br>
-        Parking points: ${data.parking_points}
-      `;
-      loadRewardUsePanel();
-    });
-
     document.getElementById('login-screen-btn').addEventListener('click', async () => {
       const user = document.getElementById('login-screen-email').value.trim();
       const password = document.getElementById('login-screen-password').value;
@@ -1478,8 +1506,6 @@
       currentSession.role = data.account.role;
       localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(currentSession));
       document.getElementById('sidebar-login-user').value = data.account.user;
-      document.getElementById('account-user').value = data.account.user;
-      document.getElementById('reward-user').value = data.account.user;
       updateUserHeader(data.account);
       document.getElementById('profile-status').innerHTML = '<strong>✓ Profile updated.</strong>';
       document.getElementById('settings-status').innerHTML = '';
@@ -1531,84 +1557,6 @@
       document.getElementById('reset-status').innerHTML = res.ok ? `<strong>✓ ${data.message}</strong>` : `<strong>⚠ ${data.detail}</strong>`;
     });
 
-    document.getElementById('account-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const user = document.getElementById('account-user').value.trim();
-      if (!user) {
-        document.getElementById('account-summary').innerHTML = '<strong>⚠ Enter a user name or email.</strong>';
-        return;
-      }
-
-      const res = await fetch(`${API_BASE}/api/users/${encodeURIComponent(user)}`, {
-        headers: { ...authHeaders() },
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        document.getElementById('account-summary').innerHTML = `<strong>⚠ ${data.detail}</strong>`;
-        return;
-      }
-      document.getElementById('account-summary').innerHTML = `
-        <strong>Account summary for ${data.user}</strong><br>
-        Role: ${data.role || 'user'}<br>
-        Total reports: ${data.total_reports}<br>
-        Parking points: ${data.parking_points}<br>
-        Help events: ${data.total_help_events}<br>
-        Claimed rewards: ${data.claimed_rewards.length ? data.claimed_rewards.join(', ') : 'None'}<br>
-        Recent reports: ${data.recent_reports.length ? data.recent_reports.map(r => r.bike_id).join(', ') : 'None'}<br>
-        Recent help events: ${data.recent_help_events.length ? data.recent_help_events.map(h => h.bike_id).join(', ') : 'None'}
-      `;
-    });
-
-    document.getElementById('parking-help-btn').addEventListener('click', async () => {
-      const user = document.getElementById('account-user').value.trim();
-      const bikeId = document.getElementById('parking-bike-id').value.trim() || 'BK-000';
-      const notes = document.getElementById('parking-notes').value.trim();
-      if (!user) {
-        document.getElementById('account-summary').innerHTML = '<strong>⚠ Enter a user name or email first.</strong>';
-        return;
-      }
-
-      const res = await fetch(`${API_BASE}/api/parking-help`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ user, bike_id: bikeId, notes }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        document.getElementById('account-summary').innerHTML = `<strong>⚠ ${data.detail || 'Unable to log parking help.'}</strong>`;
-        return;
-      }
-      document.getElementById('account-summary').innerHTML = `
-        <strong>✓ ${data.message}</strong><br>
-        Parking points: ${data.parking_points}
-      `;
-    });
-
-    document.getElementById('redeem-parking-btn').addEventListener('click', async () => {
-      const user = document.getElementById('account-user').value.trim();
-      if (!user) {
-        document.getElementById('account-summary').innerHTML = '<strong>⚠ Enter a user name or email first.</strong>';
-        return;
-      }
-
-      const res = await fetch(`${API_BASE}/api/redeem-parking-reward`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ user, points: 1 }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        document.getElementById('account-summary').innerHTML = `<strong>⚠ ${data.detail}</strong>`;
-        return;
-      }
-
-      document.getElementById('account-summary').innerHTML = `
-        <strong>✓ ${data.message}</strong><br>
-        Voucher: ${data.voucher}<br>
-        Parking points remaining: ${data.parking_points}
-      `;
-    });
-
     // Report History
     document.getElementById('report-history-btn').addEventListener('click', () => {
       showReportHistory();
@@ -1619,7 +1567,8 @@
       alert('Maintenance request feature coming soon!');
     });
 
-        // Initialize
+    // Initialize
+    loadAppConfig();
     loadSession();
     loadDashboard();
   </script>

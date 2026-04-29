@@ -6,11 +6,16 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from pathlib import Path
 from uuid import uuid4
+import csv
 import os
 import base64
+import binascii
 import json
+import mimetypes
+import sys
 import urllib.error
 import urllib.request
+from collections import Counter
 
 app = FastAPI(title="Bike Patrol Rewards", version="0.1")
 app.add_middleware(
@@ -26,6 +31,7 @@ class IssueType(str, Enum):
     toppled = "toppled"
     faulty = "faulty"
     general = "general"
+    others = "others"
 
 class Report(BaseModel):
     report_id: Optional[str] = Field(None, title="Report identifier")
@@ -104,6 +110,33 @@ REWARD_LIMIT_PER_DAY = 3
 reward_store = {}
 SESSIONS: Dict[str, str] = {}
 ROLE_PRIORITY = {"admin": 3, "maintenance": 2, "user": 1}
+CSV_DIR = Path(__file__).resolve().parents[1] / "csv"
+REPORT_IMAGES_DIR = CSV_DIR / "report-images"
+REPORTS_CSV_PATH = CSV_DIR / "reports.csv"
+REPORT_CSV_FIELDS = [
+    "report_id",
+    "reporter",
+    "bike_id",
+    "issue_type",
+    "description",
+    "location_text",
+    "location_address",
+    "location_lat",
+    "location_lng",
+    "location_accuracy",
+    "outside_zone",
+    "toppled",
+    "faulty",
+    "image",
+    "ai_summary",
+    "status",
+    "reviewed_by",
+    "review_notes",
+    "review_action",
+    "reward_granted",
+    "reward_voucher",
+    "image_file",
+]
 
 
 def get_llm_token() -> Optional[str]:
@@ -230,6 +263,174 @@ def build_location_address(lat: Optional[float], lng: Optional[float], accuracy:
     return format_location_text(lat, lng, accuracy)
 
 
+def csv_value(value):
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    return str(value)
+
+
+def parse_csv_bool(value: Optional[str]) -> bool:
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def parse_csv_float(value: Optional[str]) -> Optional[float]:
+    if value is None or str(value).strip() == "":
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def configure_csv_field_size_limit() -> None:
+    try:
+        csv.field_size_limit(sys.maxsize)
+    except OverflowError:
+        csv.field_size_limit(2**31 - 1)
+
+
+def decode_data_url(image_data_url: str) -> tuple[Optional[str], Optional[bytes]]:
+    if not image_data_url or not image_data_url.startswith("data:"):
+        return None, None
+    try:
+        header, encoded = image_data_url.split(",", 1)
+        mime_type = header.split(";", 1)[0][5:] or "application/octet-stream"
+        return mime_type, base64.b64decode(encoded)
+    except (ValueError, IndexError, binascii.Error):
+        return None, None
+
+
+def save_report_image(report_id: str, image_data_url: Optional[str], content_type: Optional[str] = None) -> Optional[str]:
+    if not image_data_url:
+        return None
+    if image_data_url.startswith("data:"):
+        mime_type, content = decode_data_url(image_data_url)
+        if content is None:
+            return None
+        content_type = mime_type or content_type
+    else:
+        content = image_data_url.encode("utf-8")
+
+    REPORT_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    ext = mimetypes.guess_extension(content_type or "") or ".bin"
+    image_file = f"{report_id}{ext}"
+    (REPORT_IMAGES_DIR / image_file).write_bytes(content)
+    return image_file
+
+
+def load_report_image_data(image_file: Optional[str]) -> Optional[str]:
+    if not image_file:
+        return None
+    image_path = REPORT_IMAGES_DIR / image_file
+    if not image_path.exists():
+        return None
+    content_type = mimetypes.guess_type(image_path.name)[0] or "application/octet-stream"
+    encoded = base64.b64encode(image_path.read_bytes()).decode("utf-8")
+    return f"data:{content_type};base64,{encoded}"
+
+
+def normalize_report_record(report: dict) -> dict:
+    normalized = dict(report)
+    normalized.setdefault("image_file", "")
+    issue_type = str(normalized.get("issue_type") or "general").strip().lower().replace(" ", "_")
+    if issue_type not in {item.value for item in IssueType}:
+        issue_type = "general"
+    normalized["issue_type"] = issue_type
+    for key in ["location_text", "location_address", "reviewed_by", "review_notes", "review_action", "ai_summary", "image", "image_file", "status", "reporter", "bike_id", "description", "report_id"]:
+        if normalized.get(key) == "":
+            normalized[key] = None
+    for key in ["outside_zone", "toppled", "faulty"]:
+        normalized[key] = parse_csv_bool(normalized.get(key, False))
+    for key in ["reward_granted"]:
+        normalized[key] = parse_csv_bool(normalized.get(key, False))
+    for key in ["location_lat", "location_lng", "location_accuracy"]:
+        normalized[key] = parse_csv_float(normalized.get(key))
+    if not normalized.get("status"):
+        normalized["status"] = "pending"
+    return normalized
+
+
+def load_reports_from_csv() -> None:
+    CSV_DIR.mkdir(parents=True, exist_ok=True)
+    configure_csv_field_size_limit()
+    if not REPORTS_CSV_PATH.exists():
+        return
+
+    with REPORTS_CSV_PATH.open("r", newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        reports = [normalize_report_record(row) for row in reader]
+
+    migrated = False
+    for report in reports:
+        if report.get("image") and not report.get("image_file"):
+            report_id = report.get("report_id") or f"RPT-{uuid4().hex[:8].upper()}"
+            report["report_id"] = report_id
+            image_file = save_report_image(report_id, report["image"])
+            if image_file:
+                report["image_file"] = image_file
+                report["image"] = load_report_image_data(image_file)
+                migrated = True
+        elif report.get("image_file"):
+            report["image"] = load_report_image_data(report["image_file"])
+
+    REPORTS.clear()
+    REPORTS.extend(reports)
+    if migrated:
+        save_reports_to_csv()
+
+
+def save_reports_to_csv() -> None:
+    CSV_DIR.mkdir(parents=True, exist_ok=True)
+    with REPORTS_CSV_PATH.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=REPORT_CSV_FIELDS)
+        writer.writeheader()
+        for report in REPORTS:
+            row = {field: csv_value(report.get(field)) for field in REPORT_CSV_FIELDS}
+            row["image"] = ""
+            writer.writerow(row)
+
+
+load_reports_from_csv()
+
+
+def is_dev_login_mode() -> bool:
+    load_env_file()
+    return os.getenv("DEV_LOGIN_MODE", "0").strip() == "1"
+
+
+def get_reward_vouchers_for_user(user: str) -> List[str]:
+    user_key = user.lower().strip()
+    return [
+        str(report.get("reward_voucher"))
+        for report in REPORTS
+        if report.get("reporter", "").lower() == user_key and report.get("reward_granted") and report.get("reward_voucher")
+    ]
+
+
+def sync_user_reward_state(account: dict) -> None:
+    user_key = account["user"].lower().strip()
+    approved_rewards = get_reward_vouchers_for_user(user_key)
+    used_rewards = list(account.get("used_rewards", []))
+    used_counter = Counter(used_rewards)
+
+    claimed_rewards: List[str] = []
+    for voucher in approved_rewards:
+        if used_counter[voucher] > 0:
+            used_counter[voucher] -= 1
+            continue
+        claimed_rewards.append(voucher)
+
+    account["claimed_rewards"] = claimed_rewards
+    account["used_rewards"] = used_rewards
+
+
+def next_reward_voucher_for_user(user: str) -> str:
+    approved_count = len(get_reward_vouchers_for_user(user))
+    return AVAILABLE_VOUCHERS[approved_count % len(AVAILABLE_VOUCHERS)]
+
+
 def ensure_report_ids():
     for index, report in enumerate(REPORTS, start=1):
         if not report.get("report_id"):
@@ -320,6 +521,8 @@ def get_current_user(authorization: Optional[str] = Header(None)):
 
 def build_user_summary(user: str):
     account = get_user_account(user)
+    user_reports = [report for report in REPORTS if report.get("reporter", "").lower() == user.lower()]
+    sync_user_reward_state(account)
     return {
         "user": account["user"],
         "display_name": account.get("display_name", account["user"]),
@@ -328,11 +531,11 @@ def build_user_summary(user: str):
         "parking_points": account["parking_points"],
         "settings": account.get("settings", {"theme": "light", "font_size": "medium"}),
         "profile_photo": account.get("profile_photo"),
-        "total_reports": len(account["reports"]),
+        "total_reports": len(user_reports),
         "total_help_events": len(account["help_events"]),
         "claimed_rewards": account["claimed_rewards"],
         "used_rewards": account.get("used_rewards", []),
-        "recent_reports": account["reports"][-10:],
+        "recent_reports": user_reports[-10:],
         "recent_help_events": account["help_events"][-10:],
     }
 
@@ -343,6 +546,7 @@ def status():
     completed_reports = [report for report in REPORTS if report.get("status") == "completed"]
     return {
         "app_name": "Bike Patrol Rewards",
+        "dev_login_mode": is_dev_login_mode(),
         "report_count": len(REPORTS),
         "total_reports": len(REPORTS),
         "pending_reports": pending_reports,
@@ -371,8 +575,8 @@ def get_reports():
 @app.get("/api/user-reports")
 def user_reports(authorization: Optional[str] = Header(None)):
     current_user_key = validate_session_token(authorization)
-    account = get_user_account(current_user_key)
-    return {"reports": account["reports"]}
+    reports = [report for report in REPORTS if report.get("reporter", "").lower() == current_user_key.lower()]
+    return {"reports": reports}
 
 @app.post("/api/reports")
 def submit_report(
@@ -397,11 +601,16 @@ def submit_report(
         current_account = get_user_account(current_user_key)
         submitted_by = current_account["user"]
 
+    ensure_report_ids()
+    report_id = f"RPT-{uuid4().hex[:8].upper()}"
+
     image_data = None
+    image_file = None
     if image:
         content = image.file.read()
         encoded_data = base64.b64encode(content).decode("utf-8")
         image_data = f"data:{image.content_type};base64,{encoded_data}"
+        image_file = save_report_image(report_id, image_data, image.content_type)
     
     normalized_location_text = location_text or format_location_text(location_lat, location_lng, location_accuracy)
     normalized_location_address = location_address or build_location_address(location_lat, location_lng, location_accuracy)
@@ -413,8 +622,6 @@ def submit_report(
         normalized_location_text,
         normalized_location_address,
     )
-    ensure_report_ids()
-    report_id = f"RPT-{uuid4().hex[:8].upper()}"
     
     report_dict = {
         "report_id": report_id,
@@ -431,15 +638,17 @@ def submit_report(
         "toppled": toppled,
         "faulty": faulty,
         "image": image_data,
+        "image_file": image_file,
         "ai_summary": ai_summary,
         "status": "pending",
         "reviewed_by": None,
         "review_notes": None,
         "review_action": None,
+        "reward_granted": False,
+        "reward_voucher": None,
     }
     REPORTS.append(report_dict)
-    account = get_user_account(submitted_by)
-    account["reports"].append(report_dict)
+    save_reports_to_csv()
     return {
         "message": "Report received. Maintenance team alerted.",
         "report": report_dict,
@@ -485,6 +694,13 @@ def review_report(
     report["reviewed_by"] = current_user_key
     report["review_notes"] = (notes or "").strip() or None
     report["review_action"] = normalized_action
+    if normalized_action == "approve" and not report.get("reward_granted"):
+        reporter_account = get_user_account(report["reporter"])
+        reward_voucher = next_reward_voucher_for_user(report["reporter"])
+        report["reward_granted"] = True
+        report["reward_voucher"] = reward_voucher
+        sync_user_reward_state(reporter_account)
+    save_reports_to_csv()
     action_word = "approved" if normalized_action == "approve" else "rejected"
 
     return {
@@ -524,6 +740,32 @@ def login(request: LoginRequest):
         "user": request.user,
         "role": account["role"],
         "account": build_user_summary(request.user),
+    }
+
+
+@app.post("/api/dev-login/{role}")
+def dev_login(role: str):
+    if not is_dev_login_mode():
+        raise HTTPException(status_code=403, detail="Dev login mode is disabled.")
+
+    normalized_role = role.strip().lower()
+    if normalized_role not in ["admin", "maintenance", "user"]:
+        raise HTTPException(status_code=400, detail="Unknown dev login role.")
+
+    account_entry = next((item for item in PROXY_USERS.items() if item[1]["role"] == normalized_role), None)
+    if not account_entry:
+        raise HTTPException(status_code=404, detail="Configured dev account not found.")
+
+    user_key, proxy = account_entry
+    token = str(uuid4())
+    SESSIONS[token] = user_key
+    account = get_user_account(user_key)
+    return {
+        "message": "Dev login successful.",
+        "token": token,
+        "user": account["user"],
+        "role": account["role"],
+        "account": build_user_summary(account["user"]),
     }
 
 @app.post("/api/register")
@@ -668,29 +910,7 @@ def redeem_parking_reward(request: ParkingRedeemRequest):
 
 @app.post("/api/claim-reward")
 def claim_reward(request: RewardRequest):
-    today = date.today().isoformat()
-    record = reward_store.setdefault(request.user.lower(), {"date": today, "count": 0, "claimed": []})
-    if record["date"] != today:
-        record["date"] = today
-        record["count"] = 0
-        record["claimed"] = []
-
-    if record["count"] >= REWARD_LIMIT_PER_DAY:
-        raise HTTPException(status_code=429, detail=f"Daily reward limit reached ({REWARD_LIMIT_PER_DAY}).")
-
-    voucher = AVAILABLE_VOUCHERS[record["count"] % len(AVAILABLE_VOUCHERS)]
-    record["count"] += 1
-    record["claimed"].append(voucher)
-    account = get_user_account(request.user)
-    account["claimed_rewards"].append(voucher)
-
-    return {
-        "message": "Reward claimed successfully.",
-        "voucher": voucher,
-        "claimed_today": record["count"],
-        "limit": REWARD_LIMIT_PER_DAY,
-        "parking_points": account["parking_points"],
-    }
+    raise HTTPException(status_code=403, detail="Rewards are only granted after maintenance approves a report.")
 
 @app.post("/api/use-reward")
 def use_reward(request: UseRewardRequest, authorization: Optional[str] = Header(None)):
@@ -709,13 +929,13 @@ def use_reward(request: UseRewardRequest, authorization: Optional[str] = Header(
 
 @app.get("/api/rewards/{user}")
 def reward_status(user: str):
-    record = reward_store.get(user.lower())
     account = get_user_account(user)
+    sync_user_reward_state(account)
     return {
         "user": user,
-        "claimed_today": record["count"] if record else 0,
+        "claimed_today": len(get_reward_vouchers_for_user(user)),
         "limit": REWARD_LIMIT_PER_DAY,
-        "claimed_vouchers": record["claimed"] if record else [],
+        "claimed_vouchers": get_reward_vouchers_for_user(user),
         "parking_points": account["parking_points"],
         "help_events": account["help_events"],
         "claimed_rewards": account["claimed_rewards"],

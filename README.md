@@ -41,6 +41,14 @@ Then use one of these sample accounts in the sidebar login:
 - `maintenance@bikepatrol.test` / `maint123`
 - `user@bikepatrol.test` / `user123`
 
+If you want the login screen to show quick-login cards instead of the normal form, set:
+
+```env
+DEV_LOGIN_MODE=1
+```
+
+When `DEV_LOGIN_MODE=1`, the login screen shows `User`, `Admin`, and `Maintenance` cards that log in with the sample accounts above.
+
 ## Run the frontend
 
 install npm
