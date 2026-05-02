@@ -4,7 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bike Patrol Rewards</title>
-  <link rel="stylesheet" href="/assets/index-BvvFNmeW.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <link rel="stylesheet" crossorigin href="/assets/index-BU-J0bnF.css">
 </head>
 <body>
   <div class="login-screen" id="login-screen">
@@ -161,15 +167,111 @@
       <div id="dashboard" class="tab-content active">
         <section class="dashboard-section">
           <h1>Bike Patrol Dashboard</h1>
-          <p class="subtitle">Monitor reports and rewards in real-time</p>
+          <p class="subtitle">Monitor report hotspots, response pressure, and community activity in real-time</p>
 
           <div class="welcome-card">
             <div>
-              <h2>Welcome back!</h2>
-              <p>Quickly review the latest bike reports, claim rewards, and manage your account from one friendly dashboard.</p>
+              <h2>Spot recurring issues before they spread</h2>
+              <p>Track where reports are clustering, which issue types are rising, and where maintenance attention will have the biggest impact.</p>
             </div>
             <div class="welcome-actions">
-              <button class="btn-primary">Get started</button>
+              <button class="btn-primary" id="dashboard-report-cta">Show tutorial</button>
+            </div>
+          </div>
+
+          <div class="dashboard-metrics" id="dashboard-metrics">
+            <div class="metric-card">
+              <span class="metric-label">Total reports</span>
+              <strong class="metric-value" id="metric-total-reports">0</strong>
+              <span class="metric-note" id="metric-total-note">No reports yet</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Pending review</span>
+              <strong class="metric-value" id="metric-pending-reports">0</strong>
+              <span class="metric-note" id="metric-pending-note">Queue is clear</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Resolved cases</span>
+              <strong class="metric-value" id="metric-completed-reports">0</strong>
+              <span class="metric-note" id="metric-completed-note">No completed cases yet</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Active hotspots</span>
+              <strong class="metric-value" id="metric-hotspots">0</strong>
+              <span class="metric-note" id="metric-hotspots-note">Waiting for mapped reports</span>
+            </div>
+          </div>
+
+          <div class="dashboard-panels">
+            <div class="dashboard-panel hotspot-map-card">
+              <div class="panel-heading">
+                <div>
+                  <h2>Hotspot map view</h2>
+                  <p>Clusters nearby reports so staff can see where recurring issues need intervention first.</p>
+                </div>
+                <div class="hotspot-legend">
+                  <span><i class="legend-dot legend-dot-low"></i> Watch</span>
+                  <span><i class="legend-dot legend-dot-medium"></i> Busy</span>
+                  <span><i class="legend-dot legend-dot-high"></i> Urgent</span>
+                </div>
+              </div>
+              <div id="hotspot-map" class="hotspot-map" aria-live="polite">
+                <div class="hotspot-empty">Hotspots will appear here after reports with location data are submitted.</div>
+              </div>
+            </div>
+
+            <div class="dashboard-side-panel">
+              <div class="dashboard-panel hotspot-list-card">
+                <div class="panel-heading">
+                  <div>
+                    <h2>Priority areas</h2>
+                    <p>Highest-signal areas ranked by report volume and urgency.</p>
+                  </div>
+                </div>
+                <div id="hotspot-list" class="hotspot-list">
+                  <div class="hotspot-empty compact">No hotspot areas yet.</div>
+                </div>
+              </div>
+
+              <div class="dashboard-panel operations-card">
+                <div class="panel-heading">
+                  <div>
+                    <h2>Ops snapshot</h2>
+                    <p>What the current report mix is telling your team right now.</p>
+                  </div>
+                </div>
+                <div class="ops-summary-grid">
+                  <div class="ops-summary-item">
+                    <span class="ops-label">Most reported issue</span>
+                    <strong id="ops-top-issue">None yet</strong>
+                  </div>
+                  <div class="ops-summary-item">
+                    <span class="ops-label">Top hotspot</span>
+                    <strong id="ops-top-hotspot">Waiting for reports</strong>
+                  </div>
+                  <div class="ops-summary-item">
+                    <span class="ops-label">Coverage</span>
+                    <strong id="ops-coverage">0 mapped reports</strong>
+                  </div>
+                  <div class="ops-summary-item">
+                    <span class="ops-label">Recommended action</span>
+                    <strong id="ops-action">Collect more field reports</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="dashboard-panel admin-account-card hidden" id="admin-account-card">
+                <div class="panel-heading">
+                  <div>
+                    <h2>Account management</h2>
+                    <p>Review user and maintenance accounts, update roles, and reset account passwords from the admin dashboard.</p>
+                  </div>
+                </div>
+                <div id="admin-account-status" class="message-box"></div>
+                <div id="admin-account-list" class="admin-account-list">
+                  <div class="hotspot-empty compact">Admin account tools will load here.</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -258,53 +360,205 @@
           <div class="modal-body" id="report-review-body"></div>
         </div>
       </div>
+      <div id="tutorial-modal" class="modal-overlay hidden">
+        <div class="modal-content tutorial-modal">
+          <div class="modal-header">
+            <h2>Quick walkthrough</h2>
+            <button class="modal-close-btn" type="button" id="close-tutorial-modal">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="tutorial-step-card">
+              <div class="tutorial-step-pill" id="tutorial-step-pill">Step 1 of 4</div>
+              <h3 id="tutorial-step-title">Dashboard overview</h3>
+              <p id="tutorial-step-body">Use the dashboard to understand what is happening across the bike network before taking action.</p>
+              <div class="tutorial-tip" id="tutorial-step-tip">Tip: The hotspot section shows where reports are clustering geographically.</div>
+            </div>
+          </div>
+          <div class="tutorial-actions">
+            <button type="button" class="btn-secondary" id="tutorial-prev-btn">Back</button>
+            <button type="button" class="btn-primary" id="tutorial-next-btn">Next</button>
+          </div>
+        </div>
+      </div>
+      <div id="points-promo-modal" class="modal-overlay hidden">
+        <div class="modal-content points-promo-modal">
+          <div class="modal-header points-promo-header">
+            <div>
+              <span class="points-promo-chip">BikePoints Bonus</span>
+              <h2>Earn points from good actions</h2>
+            </div>
+            <button class="modal-close-btn" type="button" id="close-points-promo-modal">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="points-promo-hero">
+              <strong>Help the bike community, then get rewarded like a loyalty app.</strong>
+              <p>Every verified action adds points to your wallet so you can redeem treats and perks later.</p>
+            </div>
+            <div class="points-promo-grid">
+              <article class="points-promo-item">
+                <span class="points-promo-icon">🛠️</span>
+                <div>
+                  <strong>Report faulty bikes</strong>
+                  <p>Flag damaged or unsafe bikes so maintenance can fix them fast.</p>
+                </div>
+              </article>
+              <article class="points-promo-item">
+                <span class="points-promo-icon">🚲</span>
+                <div>
+                  <strong>Put bikes back in place</strong>
+                  <p>Help return misplaced bikes into proper parking areas and earn extra bonus points.</p>
+                </div>
+              </article>
+              <article class="points-promo-item">
+                <span class="points-promo-icon">📸</span>
+                <div>
+                  <strong>Send clear photo reports</strong>
+                  <p>Good reports with photos and location details get approved faster and convert into points.</p>
+                </div>
+              </article>
+            </div>
+          </div>
+          <div class="tutorial-actions">
+            <button type="button" class="btn-secondary" id="dismiss-points-promo-btn">Maybe later</button>
+            <button type="button" class="btn-primary" id="open-points-wallet-btn">See points wallet</button>
+          </div>
+        </div>
+      </div>
 
       <!-- Rewards Tab -->
       <div id="rewards" class="tab-content">
         <section class="rewards-section">
-          <h1>Report Rewards</h1>
-          <p class="subtitle">Rewards are issued after maintenance approves your report.</p>
+          <h1>Points Wallet</h1>
+          <p class="subtitle">Earn points from approved reports, then redeem them like a loyalty app.</p>
 
           <div class="rewards-container">
             <div class="form-container">
-              <div class="account-box">
-                <h3>How To Earn Rewards</h3>
-                <p class="small-text" style="margin-bottom: 12px;">
-                  Submit a report with a photo and location, then wait for maintenance to approve it.
-                </p>
-                <div class="message-box" style="display:block;">
-                  Approved reports automatically unlock voucher rewards in this panel.
+              <div class="points-wallet-card">
+                <div class="points-balance-row">
+                  <div>
+                    <span class="points-label">Available points</span>
+                    <strong class="points-balance" id="points-balance">0</strong>
+                  </div>
+                  <div class="points-progress-chip" id="points-next-reward">Log in to view your balance</div>
+                </div>
+                <div class="points-stats-grid">
+                  <div class="points-stat-box">
+                    <span>Lifetime earned</span>
+                    <strong id="points-lifetime">0</strong>
+                  </div>
+                  <div class="points-stat-box">
+                    <span>Recent activity</span>
+                    <strong id="points-activity-count">0</strong>
+                  </div>
+                  <div class="points-stat-box">
+                    <span>Good-action streak</span>
+                    <strong id="points-streak">0</strong>
+                  </div>
+                  <div class="points-stat-box">
+                    <span>Active multiplier</span>
+                    <strong id="points-multiplier">1.00x</strong>
+                  </div>
                 </div>
               </div>
-              <div id="account-summary" class="message-box hidden"></div>
-            </div>
-
-            <div class="vouchers-display">
-                <h3>Reward Types</h3>
-                <div class="reward-type-grid">
-                  <div class="reward-type-card">
-                    <div class="reward-type-icon">🍔</div>
-                    <div class="reward-type-title">CDC Food Voucher</div>
-                    <div class="reward-type-desc">Use this for food and drinks at participating merchants.</div>
+              <div class="points-earn-card">
+                <h3>How To Earn Points</h3>
+                <div class="points-earn-list">
+                  <div class="points-earn-item">
+                    <span>Illegal parking report</span>
+                    <strong>+80 pts</strong>
                   </div>
-                  <div class="reward-type-card">
-                    <div class="reward-type-icon">🛍️</div>
-                    <div class="reward-type-title">CDC Shopping Discount</div>
-                    <div class="reward-type-desc">Redeem for everyday shopping savings and small purchases.</div>
+                  <div class="points-earn-item">
+                    <span>Faulty bike report</span>
+                    <strong>+110 pts</strong>
                   </div>
-                  <div class="reward-type-card">
-                    <div class="reward-type-icon">🚌</div>
-                    <div class="reward-type-title">CDC Transport Subsidy</div>
-                    <div class="reward-type-desc">Helps offset travel and commuting costs.</div>
+                  <div class="points-earn-item">
+                    <span>Toppled bike report</span>
+                    <strong>+140 pts</strong>
                   </div>
-                  <div class="reward-type-card">
-                    <div class="reward-type-icon">🔧</div>
-                    <div class="reward-type-title">CDC Bike Care Coupon</div>
-                    <div class="reward-type-desc">A reward for bike upkeep, repairs, or maintenance support.</div>
+                  <div class="points-earn-item">
+                    <span>Other verified report</span>
+                    <strong>+60 pts</strong>
+                  </div>
+                  <div class="points-earn-item">
+                    <span>Bike rental ride</span>
+                    <strong>+10 pts</strong>
+                  </div>
+                  <div class="points-earn-item">
+                    <span>Proper bike parking</span>
+                    <strong>+15 pts</strong>
                   </div>
                 </div>
-                <div class="reward-note">
-                  Approved report rewards will appear in your account automatically after maintenance review.
+                <div class="streak-rule-box">
+                  Every 5 good actions increases your point multiplier. Ride and parking points stay lower than good-action rewards so the app keeps promoting responsible behaviour first. If admins suspect illegal parking, they can reset the streak back to 0.
+                </div>
+                <div id="points-wallet-status" class="message-box"></div>
+              </div>
+            </div>
+
+            <div class="points-store-panel">
+                <h3>Redeem with Points</h3>
+                <div class="points-store-grid" id="points-store-grid">
+                  <div class="hotspot-empty compact">Log in to browse the points catalog.</div>
+                </div>
+                <div class="ride-history-panel">
+                  <div class="points-history-header">
+                    <h3>Bike activity rewards</h3>
+                    <p>Log rental trips and proper parking to earn smaller usage points.</p>
+                  </div>
+                  <div class="qr-rental-card">
+                    <div class="points-history-header">
+                      <h4>Mock QR scan</h4>
+                      <p>Use a dummy bike QR for now. Scanning links the bike to your account so parking incidents can be tracked back to the current renter.</p>
+                    </div>
+                    <div class="ride-log-form">
+                      <input type="text" id="scan-bike-id" placeholder="Dummy QR bike ID e.g. BK-101" />
+                      <div class="ride-log-actions">
+                        <button type="button" class="btn-primary" id="scan-bike-btn">Scan QR and link bike</button>
+                      </div>
+                    </div>
+                    <div class="scan-summary-row">
+                      <span>Active linked bike</span>
+                      <strong id="active-bike-id">None linked</strong>
+                    </div>
+                    <div class="message-box" id="scan-bike-status"></div>
+                  </div>
+                  <div class="ride-log-form">
+                    <input type="text" id="ride-bike-id" placeholder="Bike ID e.g. BK-101" />
+                    <input type="text" id="ride-notes" placeholder="Optional ride note" />
+                    <div class="ride-log-actions">
+                      <button type="button" class="btn-secondary" id="log-ride-btn">Log ride +10 pts</button>
+                      <button type="button" class="btn-primary" id="log-parking-btn">Log parking +15 pts</button>
+                    </div>
+                  </div>
+                  <div class="ride-history-columns">
+                    <div>
+                      <h4>Ride history</h4>
+                      <div class="mini-history-list" id="ride-history-list">
+                        <div class="hotspot-empty compact">No rides logged yet.</div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4>Parking history</h4>
+                      <div class="mini-history-list" id="parking-history-list">
+                        <div class="hotspot-empty compact">No parking logs yet.</div>
+                      </div>
+                    </div>
+                    <div>
+                      <h4>Parking incident record</h4>
+                      <div class="mini-history-list" id="parking-incident-list">
+                        <div class="hotspot-empty compact">No parking incidents on record.</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="points-history-panel">
+                  <div class="points-history-header">
+                    <h3>Recent point activity</h3>
+                    <p id="points-history-copy">Your latest earnings and redemptions will appear here.</p>
+                  </div>
+                  <div class="points-history-list" id="points-history-list">
+                    <div class="hotspot-empty compact">No point activity yet.</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -416,12 +670,43 @@
   </div>
 
   <script>
-    const API_BASE = 'http://127.0.0.1:8000';
+    const API_BASE = '';
     const AUTH_SESSION_KEY = 'bikepatrol_session';
     const GUEST_MODE_KEY = 'bikepatrol_guest';
+    const POINTS_PROMO_SEEN_KEY = 'bikepatrol_points_promo_seen';
     let currentSession = null;
     let isGuestMode = false;
     let devLoginMode = false;
+    let currentHotspots = [];
+    let currentMappedReportsCount = 0;
+    let selectedHotspotId = null;
+    let hotspotMapZoom = 1;
+    let leafletLoaderPromise = null;
+    let hotspotLeafletMap = null;
+    let hotspotLeafletLayerGroup = null;
+    const tutorialSteps = [
+      {
+        title: 'Dashboard overview',
+        body: 'Start here to see the live state of the system. The metrics tell you how many reports are waiting, how many are resolved, and where operational pressure is building.',
+        tip: 'Tip: The hotspot cards on the dashboard are the fastest way to explain your project to judges.',
+      },
+      {
+        title: 'Submit a report',
+        body: 'Open the Reports tab, choose an issue type, upload a photo, and allow location access. The app uses the location to place the report into a hotspot area.',
+        tip: 'Tip: A few demo reports with different locations make the hotspot map feel much stronger.',
+      },
+      {
+        title: 'Track points and redemptions',
+        body: 'After maintenance approves a report, points are added to the wallet. Users can redeem those points from the catalog and watch their point history update in real time.',
+        tip: 'Tip: This helps you show the full loop from citizen action to loyalty-style rewards.',
+      },
+      {
+        title: 'Manage your account',
+        body: 'The Account tab lets people update their profile, switch between light and dark mode, and change their password and accessibility preferences.',
+        tip: 'Tip: Mention that each role sees a tailored view of the same system.',
+      },
+    ];
+    let currentTutorialStep = 0;
     let cropScale = 1;
     let cropOffset = { x: 0, y: 0 };
     let cropDragging = false;
@@ -545,11 +830,12 @@
         return false;
       }
       setSession(data.token, data.user, data.role, data.account);
-      document.getElementById('account-summary').innerHTML = `<strong>Logged in as ${data.account.display_name} (${data.role}).</strong>`;
       updateUserHeader(data.account);
       hideLoginScreen();
       document.getElementById('sidebar-account-btn').classList.add('hidden');
       loadRewardUsePanel();
+      localStorage.removeItem(POINTS_PROMO_SEEN_KEY);
+      maybeShowPointsPromo();
       return true;
     }
 
@@ -576,7 +862,6 @@
         return false;
       }
       setSession(data.token, data.user, data.role, data.account);
-      document.getElementById('account-summary').innerHTML = `<strong>Logged in as ${data.account.display_name} (${data.role}).</strong>`;
       updateUserHeader(data.account);
       hideLoginScreen();
       document.getElementById('login-form').classList.remove('hidden');
@@ -584,6 +869,8 @@
       document.getElementById('login-screen-status').innerHTML = '<strong>✓ Account created and signed in.</strong>';
       clearLoginError();
       loadRewardUsePanel();
+      localStorage.removeItem(POINTS_PROMO_SEEN_KEY);
+      maybeShowPointsPromo();
       return true;
     }
 
@@ -604,11 +891,12 @@
         return false;
       }
       setSession(data.token, data.user, data.role, data.account);
-      document.getElementById('account-summary').innerHTML = `<strong>Logged in as ${data.account.display_name} (${data.role}).</strong>`;
       updateUserHeader(data.account);
       hideLoginScreen();
       document.getElementById('sidebar-account-btn').classList.add('hidden');
       loadRewardUsePanel();
+      localStorage.removeItem(POINTS_PROMO_SEEN_KEY);
+      maybeShowPointsPromo();
       return true;
     }
 
@@ -745,6 +1033,32 @@
       return { Authorization: `Bearer ${currentSession.token}` };
     }
 
+    function activateTab(tabName) {
+      document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach((el) => el.classList.remove('active'));
+      document.querySelector(`.nav-item[data-tab="${tabName}"]`)?.classList.add('active');
+      document.getElementById(tabName)?.classList.add('active');
+    }
+
+    function openPointsPromoModal() {
+      if (currentSession?.role === 'admin' || currentSession?.role === 'maintenance') return;
+      document.getElementById('points-promo-modal')?.classList.remove('hidden');
+    }
+
+    function closePointsPromoModal(markSeen = true) {
+      document.getElementById('points-promo-modal')?.classList.add('hidden');
+      if (markSeen) {
+        localStorage.setItem(POINTS_PROMO_SEEN_KEY, 'true');
+      }
+    }
+
+    function maybeShowPointsPromo() {
+      if (!currentSession?.token) return;
+      if (currentSession.role === 'admin' || currentSession.role === 'maintenance') return;
+      if (localStorage.getItem(POINTS_PROMO_SEEN_KEY) === 'true') return;
+      window.setTimeout(() => openPointsPromoModal(), 450);
+    }
+
     function updateUserHeader(account) {
       const displayName = account.display_name || account.user || 'Guest';
       document.getElementById('sidebar-user-name').textContent = displayName;
@@ -764,6 +1078,11 @@
       if (maintenanceBtn) {
         maintenanceBtn.style.display = (account.role === 'admin') ? 'block' : 'none';
       }
+
+      const dashboardButton = document.getElementById('dashboard-report-cta');
+      if (dashboardButton) {
+        dashboardButton.textContent = account.role === 'admin' ? 'Open account tools' : 'Show tutorial';
+      }
       
       if (account.settings) {
         document.getElementById('settings-theme').value = account.settings.theme || 'light';
@@ -779,16 +1098,24 @@
 
     function applyRoleSpecificUI(role) {
       const staffMode = isStaffRole(role);
+      const adminMode = role === 'admin';
       const maintenanceMode = role === 'maintenance';
       const reportHistoryBtn = document.getElementById('report-history-btn');
+      const reportsNav = document.querySelector('.nav-item[data-tab="reports"]');
       const reportSubmitSection = document.getElementById('report-submit-section');
       const staffReportsSection = document.getElementById('staff-reports-section');
       const reportsTitle = document.getElementById('reports-section-title');
       const rewardsNav = document.querySelector('.nav-item[data-tab="rewards"]');
       const rewardsTab = document.getElementById('rewards');
+      const reportsTab = document.getElementById('reports');
+      const adminAccountCard = document.getElementById('admin-account-card');
+      const dashboardButton = document.getElementById('dashboard-report-cta');
 
       if (reportHistoryBtn) {
         reportHistoryBtn.classList.toggle('hidden', staffMode);
+      }
+      if (reportsNav) {
+        reportsNav.classList.toggle('hidden', adminMode);
       }
       if (reportSubmitSection) {
         reportSubmitSection.classList.toggle('hidden', staffMode);
@@ -800,19 +1127,31 @@
         reportsTitle.textContent = staffMode ? 'User Reports' : 'Submit Report';
       }
       if (rewardsNav) {
-        rewardsNav.classList.toggle('hidden', maintenanceMode);
+        rewardsNav.classList.toggle('hidden', maintenanceMode || adminMode);
       }
       if (rewardsTab) {
-        rewardsTab.classList.toggle('hidden', maintenanceMode);
+        rewardsTab.classList.toggle('hidden', maintenanceMode || adminMode);
+      }
+      if (reportsTab) {
+        reportsTab.classList.toggle('hidden', adminMode);
+      }
+      if (adminAccountCard) {
+        adminAccountCard.classList.toggle('hidden', !adminMode);
+      }
+      if (dashboardButton) {
+        dashboardButton.classList.toggle('hidden', maintenanceMode);
       }
 
-      if (maintenanceMode) {
+      if (adminMode) {
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab && (activeTab.id === 'reports' || activeTab.id === 'rewards')) {
+          activateTab('dashboard');
+        }
+        loadAdminAccounts();
+      } else if (maintenanceMode) {
         const activeTab = document.querySelector('.tab-content.active');
         if (activeTab && activeTab.id === 'rewards') {
-          document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-          document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-          document.querySelector('.nav-item[data-tab="reports"]')?.classList.add('active');
-          document.getElementById('reports')?.classList.add('active');
+          activateTab('reports');
         }
       }
 
@@ -874,10 +1213,11 @@
             document.getElementById('sidebar-login-status').innerHTML = `Logged in as <strong>${currentSession.user}</strong> (${currentSession.role}).`;
             applyRoleSpecificUI(currentSession.role);
             const restored = await loadCurrentAccountProfile();
-            if (restored) {
-              hideLoginScreen();
-              return;
-            }
+      if (restored) {
+        maybeShowPointsPromo();
+        hideLoginScreen();
+        return;
+      }
           }
         } catch {
           // Fall through to clearing invalid local data.
@@ -940,18 +1280,588 @@
       });
     });
 
+    function formatIssueLabel(issueType) {
+      if (!issueType) return 'General';
+      return issueType.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
+    function getIssueWeight(issueType) {
+      if (issueType === 'toppled') return 3;
+      if (issueType === 'faulty') return 2.6;
+      if (issueType === 'illegal_parking') return 2.2;
+      return 1.6;
+    }
+
+    function getHotspotSeverity(score) {
+      if (score >= 8) return 'high';
+      if (score >= 4) return 'medium';
+      return 'low';
+    }
+
+    function getSeverityCopy(severity) {
+      if (severity === 'high') return 'Urgent';
+      if (severity === 'medium') return 'Busy';
+      return 'Watch';
+    }
+
+    function ensureSelectedHotspot(hotspots) {
+      if (!hotspots.length) {
+        selectedHotspotId = null;
+        return null;
+      }
+      const selected = hotspots.find((hotspot) => hotspot.id === selectedHotspotId);
+      return selected || null;
+    }
+
+    function getCurrentHotspotReports() {
+      return currentHotspots.flatMap((hotspot) => hotspot.reports);
+    }
+
+    function getPrimaryHotspot(hotspots) {
+      return hotspots.length ? hotspots[0] : null;
+    }
+
+    function getSeverityColor(severity) {
+      if (severity === 'high') return '#ff5a5f';
+      if (severity === 'medium') return '#f59e0b';
+      return '#34d399';
+    }
+
+    function isUserHotspotView() {
+      return currentSession?.role === 'user';
+    }
+
+    function getHotspotMarkerLabel(hotspot) {
+      return isUserHotspotView() ? '!' : String(hotspot.count);
+    }
+
+    function getUserHotspotPrompt(hotspot) {
+      if (hotspot?.topIssue === 'illegal_parking') {
+        return 'Illegal parking reported here. This is your chance to earn more points!';
+      }
+      return 'A community issue was reported here. Help out and earn more points!';
+    }
+
+    function buildHotspotDetailMarkup(selectedHotspot) {
+      if (!selectedHotspot) return '';
+      if (isUserHotspotView()) {
+        return `
+          <div class="hotspot-map-detail">
+            <div class="hotspot-map-detail-head">
+              <span class="hotspot-map-chip hotspot-map-chip-${selectedHotspot.severity}">${getSeverityCopy(selectedHotspot.severity)}</span>
+              <span>Earn more points</span>
+            </div>
+            <strong>${selectedHotspot.title}</strong>
+            <p>${formatIssueLabel(selectedHotspot.topIssue)} reported here. This is your chance to earn more points by helping put bikes back in place.</p>
+          </div>
+        `;
+      }
+      const selectedReportsMarkup = selectedHotspot.reports.slice(0, 3).map((report) => `
+        <div class="hotspot-detail-row">
+          <span>${report.bike_id}</span>
+          <span>${formatIssueLabel(report.issue_type)}</span>
+        </div>
+      `).join('');
+
+      return `
+        <div class="hotspot-map-detail">
+          <div class="hotspot-map-detail-head">
+            <span class="hotspot-map-chip hotspot-map-chip-${selectedHotspot.severity}">${getSeverityCopy(selectedHotspot.severity)}</span>
+            <span>${selectedHotspot.count} report${selectedHotspot.count === 1 ? '' : 's'}</span>
+          </div>
+          <strong>${selectedHotspot.title}</strong>
+          <p>${selectedHotspot.pending} pending • ${selectedHotspot.completed} resolved • ${formatIssueLabel(selectedHotspot.topIssue)}</p>
+          <div class="hotspot-detail-list">
+            ${selectedReportsMarkup}
+          </div>
+        </div>
+      `;
+    }
+
+    function loadLeafletAssets() {
+      if (window.L) {
+        return Promise.resolve(window.L);
+      }
+      if (leafletLoaderPromise) {
+        return leafletLoaderPromise;
+      }
+
+      leafletLoaderPromise = new Promise((resolve, reject) => {
+        const existingScript = document.querySelector('script[data-leaflet-loader="true"]');
+        if (existingScript) {
+          existingScript.addEventListener('load', () => resolve(window.L), { once: true });
+          existingScript.addEventListener('error', () => reject(new Error('Leaflet failed to load.')), { once: true });
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+        script.crossOrigin = '';
+        script.defer = true;
+        script.dataset.leafletLoader = 'true';
+        script.onload = () => resolve(window.L);
+        script.onerror = () => reject(new Error('Leaflet failed to load.'));
+        document.head.appendChild(script);
+      });
+
+      return leafletLoaderPromise;
+    }
+
+    function buildLeafletMarkerIcon(hotspot, isSelected) {
+      const color = getSeverityColor(hotspot.severity);
+      const size = isSelected ? 42 : 34;
+      return L.divIcon({
+        className: 'leaflet-hotspot-marker-shell',
+        html: `
+          <div class="leaflet-hotspot-marker ${isSelected ? 'selected' : ''}" style="--marker-color:${color}; --marker-size:${size}px;">
+            <span>${getHotspotMarkerLabel(hotspot)}</span>
+          </div>
+        `,
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2],
+      });
+    }
+
+    function selectHotspotAndRefresh(hotspotId, mappedReportsCount) {
+      selectedHotspotId = selectedHotspotId === hotspotId ? null : hotspotId;
+      const reports = getCurrentHotspotReports();
+      renderHotspotMap(currentHotspots, mappedReportsCount);
+      renderHotspotList(currentHotspots);
+      updateDashboardMetrics(
+        reports,
+        reports.filter((report) => report.status !== 'completed'),
+        reports.filter((report) => report.status === 'completed'),
+        currentHotspots,
+        mappedReportsCount,
+      );
+    }
+
+    function buildHotspots(reports) {
+      const mappedReports = reports.filter((report) =>
+        Number.isFinite(report.location_lat) && Number.isFinite(report.location_lng)
+      );
+      const clusters = [];
+      const threshold = 0.0022;
+
+      mappedReports.forEach((report) => {
+        const lat = Number(report.location_lat);
+        const lng = Number(report.location_lng);
+        const score = getIssueWeight(report.issue_type) + (report.status === 'pending' ? 0.8 : 0.2);
+        let cluster = clusters.find((item) => {
+          const latDistance = item.lat / item.count - lat;
+          const lngDistance = item.lng / item.count - lng;
+          return Math.hypot(latDistance, lngDistance) <= threshold;
+        });
+
+        if (!cluster) {
+          cluster = {
+            id: `hotspot-${clusters.length + 1}`,
+            lat: 0,
+            lng: 0,
+            count: 0,
+            score: 0,
+            pending: 0,
+            completed: 0,
+            issueCounts: {},
+            sampleAddress: report.location_address || report.location_text || null,
+            reports: [],
+          };
+          clusters.push(cluster);
+        }
+
+        cluster.lat += lat;
+        cluster.lng += lng;
+        cluster.count += 1;
+        cluster.score += score;
+        cluster.pending += report.status === 'pending' ? 1 : 0;
+        cluster.completed += report.status === 'completed' ? 1 : 0;
+        cluster.issueCounts[report.issue_type] = (cluster.issueCounts[report.issue_type] || 0) + 1;
+        if (!cluster.sampleAddress && (report.location_address || report.location_text)) {
+          cluster.sampleAddress = report.location_address || report.location_text;
+        }
+        cluster.reports.push(report);
+      });
+
+      return clusters
+        .map((cluster, index) => {
+          const centroidLat = cluster.lat / cluster.count;
+          const centroidLng = cluster.lng / cluster.count;
+          const topIssue = Object.entries(cluster.issueCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'general';
+          const severity = getHotspotSeverity(cluster.score);
+          return {
+            id: cluster.id,
+            index: index + 1,
+            lat: centroidLat,
+            lng: centroidLng,
+            count: cluster.count,
+            score: cluster.score,
+            pending: cluster.pending,
+            completed: cluster.completed,
+            topIssue,
+            severity,
+            title: cluster.sampleAddress || `Hotspot ${index + 1}`,
+            reports: cluster.reports,
+          };
+        })
+        .sort((a, b) => b.score - a.score);
+    }
+
+    async function renderHotspotMap(hotspots, mappedReportsCount) {
+      const map = document.getElementById('hotspot-map');
+      if (!map) return;
+
+      if (!hotspots.length) {
+        map.innerHTML = '<div class="hotspot-empty">Hotspots will appear here after reports with location data are submitted.</div>';
+        if (hotspotLeafletMap) {
+          hotspotLeafletMap.remove();
+          hotspotLeafletMap = null;
+          hotspotLeafletLayerGroup = null;
+        }
+        return;
+      }
+
+      const selectedHotspot = ensureSelectedHotspot(hotspots);
+      const primaryHotspot = getPrimaryHotspot(hotspots);
+      const displayHotspot = selectedHotspot || primaryHotspot;
+
+      map.innerHTML = `
+        <div class="hotspot-map-caption">
+          <span>${mappedReportsCount} mapped report${mappedReportsCount === 1 ? '' : 's'}</span>
+          <span>${hotspots.length} hotspot${hotspots.length === 1 ? '' : 's'} detected</span>
+        </div>
+        <div class="hotspot-map-shell">
+          <div id="leaflet-hotspot-map" class="leaflet-hotspot-map" aria-label="Interactive hotspot map"></div>
+          <div class="leaflet-map-sheen"></div>
+          <div class="hotspot-map-controls">
+            <button type="button" class="map-control-btn" data-map-zoom="in" aria-label="Zoom in">+</button>
+            <button type="button" class="map-control-btn" data-map-zoom="out" aria-label="Zoom out">−</button>
+          </div>
+          <div class="hotspot-map-compass">N</div>
+          ${buildHotspotDetailMarkup(selectedHotspot)}
+        </div>
+      `;
+
+      try {
+        await loadLeafletAssets();
+        const mapCanvas = document.getElementById('leaflet-hotspot-map');
+        if (!mapCanvas) return;
+
+        if (hotspotLeafletMap) {
+          hotspotLeafletMap.remove();
+          hotspotLeafletMap = null;
+          hotspotLeafletLayerGroup = null;
+        }
+
+        hotspotLeafletMap = L.map(mapCanvas, {
+          zoomControl: false,
+          attributionControl: false,
+          scrollWheelZoom: true,
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+        }).addTo(hotspotLeafletMap);
+
+        hotspotLeafletLayerGroup = L.layerGroup().addTo(hotspotLeafletMap);
+        const bounds = [];
+
+        hotspots.forEach((hotspot) => {
+          const position = [hotspot.lat, hotspot.lng];
+          const isSelected = hotspot.id === selectedHotspot?.id;
+          const severityColor = getSeverityColor(hotspot.severity);
+
+          const pulse = L.circleMarker(position, {
+            radius: isSelected ? 30 : 24,
+            stroke: false,
+            fillColor: severityColor,
+            fillOpacity: isSelected ? 0.18 : 0.1,
+          });
+
+          const marker = L.marker(position, {
+            icon: buildLeafletMarkerIcon(hotspot, isSelected),
+            keyboard: true,
+            title: hotspot.title,
+          });
+
+          pulse.addTo(hotspotLeafletLayerGroup);
+          marker.addTo(hotspotLeafletLayerGroup);
+          pulse.on('click', () => selectHotspotAndRefresh(hotspot.id, mappedReportsCount));
+          marker.on('click', () => selectHotspotAndRefresh(hotspot.id, mappedReportsCount));
+          bounds.push(position);
+        });
+
+        if (bounds.length === 1) {
+          hotspotLeafletMap.setView(bounds[0], Math.max(Math.round(14 * hotspotMapZoom), 14));
+        } else {
+          hotspotLeafletMap.fitBounds(bounds, { padding: [72, 72] });
+        }
+
+        window.setTimeout(() => hotspotLeafletMap?.invalidateSize(), 0);
+      } catch {
+        const shell = map.querySelector('.hotspot-map-shell');
+        if (shell) {
+          shell.insertAdjacentHTML('beforeend', `
+            <div class="hotspot-map-fallback">
+              <strong>Leaflet could not load.</strong>
+              <p>Check your internet connection and reload the page to render the live map.</p>
+            </div>
+          `);
+        }
+      }
+
+      map.querySelectorAll('.map-control-btn').forEach((button) => {
+        button.addEventListener('click', () => {
+          hotspotMapZoom = button.dataset.mapZoom === 'in'
+            ? Math.min(hotspotMapZoom + 0.12, 1.45)
+            : Math.max(hotspotMapZoom - 0.12, 0.84);
+          if (hotspotLeafletMap) {
+            const currentZoom = hotspotLeafletMap.getZoom() || 14;
+            hotspotLeafletMap.setZoom(button.dataset.mapZoom === 'in' ? currentZoom + 1 : currentZoom - 1);
+          }
+        });
+      });
+    }
+
+    function renderHotspotList(hotspots) {
+      const list = document.getElementById('hotspot-list');
+      if (!list) return;
+
+      if (!hotspots.length) {
+        list.innerHTML = '<div class="hotspot-empty compact">No hotspot areas yet.</div>';
+        return;
+      }
+
+      const selectedHotspot = ensureSelectedHotspot(hotspots);
+      list.innerHTML = hotspots.slice(0, 5).map((hotspot, index) => `
+        <article class="hotspot-list-item ${hotspot.id === selectedHotspot?.id ? 'selected' : ''}" data-hotspot-id="${hotspot.id}" tabindex="0" role="button" aria-label="${hotspot.title}">
+          <div class="hotspot-rank">${index + 1}</div>
+          <div class="hotspot-copy">
+            <strong>${hotspot.title}</strong>
+            <span>${isUserHotspotView() ? getUserHotspotPrompt(hotspot) : `${hotspot.count} report${hotspot.count === 1 ? '' : 's'} • ${hotspot.pending} pending • ${formatIssueLabel(hotspot.topIssue)}`}</span>
+          </div>
+          <div class="hotspot-pill hotspot-pill-${hotspot.severity}">${hotspot.severity}</div>
+        </article>
+      `).join('');
+
+      list.querySelectorAll('[data-hotspot-id]').forEach((node) => {
+        const mappedReportsCount = getCurrentHotspotReports().filter((report) =>
+          Number.isFinite(report.location_lat) && Number.isFinite(report.location_lng)
+        ).length;
+        const activateHotspot = () => selectHotspotAndRefresh(node.getAttribute('data-hotspot-id'), mappedReportsCount);
+        node.addEventListener('click', activateHotspot);
+        node.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            activateHotspot();
+          }
+        });
+      });
+    }
+
+    function updateDashboardMetrics(reports, pendingReports, completedReports, hotspots, mappedReportsCount) {
+      const totalReports = reports.length;
+      const topHotspot = getPrimaryHotspot(hotspots);
+      const issueTotals = reports.reduce((counts, report) => {
+        counts[report.issue_type] = (counts[report.issue_type] || 0) + 1;
+        return counts;
+      }, {});
+      const topIssue = Object.entries(issueTotals).sort((a, b) => b[1] - a[1])[0]?.[0];
+
+      document.getElementById('metric-total-reports').textContent = String(totalReports);
+      document.getElementById('metric-total-note').textContent = totalReports ? 'Community activity is being tracked live' : 'No reports yet';
+      document.getElementById('metric-pending-reports').textContent = String(pendingReports.length);
+      document.getElementById('metric-pending-note').textContent = pendingReports.length ? 'Cases still waiting for staff review' : 'Queue is clear';
+      document.getElementById('metric-completed-reports').textContent = String(completedReports.length);
+      document.getElementById('metric-completed-note').textContent = completedReports.length ? 'Reports already processed by staff' : 'No completed cases yet';
+      document.getElementById('metric-hotspots').textContent = String(hotspots.length);
+      document.getElementById('metric-hotspots-note').textContent = hotspots.length ? 'Recurring problem areas detected' : 'Waiting for mapped reports';
+
+      document.getElementById('ops-top-issue').textContent = topIssue ? formatIssueLabel(topIssue) : 'None yet';
+      document.getElementById('ops-top-hotspot').textContent = topHotspot ? topHotspot.title : 'Waiting for reports';
+      document.getElementById('ops-coverage').textContent = `${mappedReportsCount} mapped report${mappedReportsCount === 1 ? '' : 's'}`;
+      document.getElementById('ops-action').textContent = topHotspot
+        ? `Prioritise ${formatIssueLabel(topHotspot.topIssue).toLowerCase()} checks near ${topHotspot.title}`
+        : 'Collect more field reports';
+    }
+
     // Load initial data
     async function loadDashboard() {
-      const res = await fetch(`${API_BASE}/api/status`);
+      const map = document.getElementById('hotspot-map');
+      const list = document.getElementById('hotspot-list');
+      if (map) {
+        map.innerHTML = '<div class="hotspot-empty">Loading hotspot map...</div>';
+      }
+      if (list) {
+        list.innerHTML = '<div class="hotspot-empty compact">Loading priority areas...</div>';
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/reports`);
+        const data = await res.json();
+        const reports = data.all_reports || data.recent_reports || [];
+        const pendingReports = data.pending_reports || reports.filter((report) => report.status !== 'completed');
+        const completedReports = data.completed_reports || reports.filter((report) => report.status === 'completed');
+        const hotspots = buildHotspots(reports);
+        currentHotspots = hotspots;
+        const mappedReportsCount = reports.filter((report) =>
+          Number.isFinite(report.location_lat) && Number.isFinite(report.location_lng)
+        ).length;
+        currentMappedReportsCount = mappedReportsCount;
+
+        updateDashboardMetrics(reports, pendingReports, completedReports, hotspots, mappedReportsCount);
+        renderHotspotMap(hotspots, mappedReportsCount);
+        renderHotspotList(hotspots);
+      } catch {
+        if (map) {
+          map.innerHTML = '<div class="hotspot-empty">Unable to load hotspot data right now.</div>';
+        }
+        if (list) {
+          list.innerHTML = '<div class="hotspot-empty compact">Unable to load priority areas.</div>';
+        }
+      }
+    }
+
+    function renderTutorialStep() {
+      const step = tutorialSteps[currentTutorialStep];
+      document.getElementById('tutorial-step-pill').textContent = `Step ${currentTutorialStep + 1} of ${tutorialSteps.length}`;
+      document.getElementById('tutorial-step-title').textContent = step.title;
+      document.getElementById('tutorial-step-body').textContent = step.body;
+      document.getElementById('tutorial-step-tip').textContent = step.tip;
+      document.getElementById('tutorial-prev-btn').disabled = currentTutorialStep === 0;
+      document.getElementById('tutorial-next-btn').textContent = currentTutorialStep === tutorialSteps.length - 1 ? 'Done' : 'Next';
+    }
+
+    function openTutorialModal() {
+      currentTutorialStep = 0;
+      renderTutorialStep();
+      document.getElementById('tutorial-modal')?.classList.remove('hidden');
+    }
+
+    function closeTutorialModal() {
+      document.getElementById('tutorial-modal')?.classList.add('hidden');
+    }
+
+    async function loadAdminAccounts() {
+      const card = document.getElementById('admin-account-card');
+      const list = document.getElementById('admin-account-list');
+      const status = document.getElementById('admin-account-status');
+      if (!card || !list || !currentSession?.token || currentSession.role !== 'admin') {
+        return;
+      }
+
+      status.innerHTML = '';
+      list.innerHTML = '<div class="hotspot-empty compact">Loading accounts...</div>';
+
+      const res = await fetch(`${API_BASE}/api/admin/accounts`, {
+        headers: authHeaders(),
+      });
       const data = await res.json();
+      if (!res.ok) {
+        list.innerHTML = `<div class="hotspot-empty compact">${data.detail || 'Unable to load admin accounts.'}</div>`;
+        return;
+      }
+
+      const accounts = (data.accounts || []).filter((account) => account.role !== 'admin');
+      if (!accounts.length) {
+        list.innerHTML = '<div class="hotspot-empty compact">No maintenance or user accounts to manage yet.</div>';
+        return;
+      }
+
+      list.innerHTML = accounts.map((account) => `
+        <article class="admin-account-item" data-user="${account.user}">
+          <div class="admin-account-header">
+            <div>
+              <strong>${account.display_name || account.user}</strong>
+              <span>${account.user}</span>
+            </div>
+            <span class="hotspot-pill hotspot-pill-${account.role === 'maintenance' ? 'medium' : 'low'}">${account.role}</span>
+          </div>
+          <div class="admin-streak-row">
+            <span>Current streak: <strong>${account.good_action_streak || 0}</strong></span>
+            <span>Multiplier: <strong>${Number(account.streak_multiplier || 1).toFixed(2)}x</strong></span>
+          </div>
+          <div class="admin-account-controls">
+            <label>
+              <span>Role</span>
+              <select class="admin-role-select">
+                <option value="user" ${account.role === 'user' ? 'selected' : ''}>User</option>
+                <option value="maintenance" ${account.role === 'maintenance' ? 'selected' : ''}>Maintenance</option>
+              </select>
+            </label>
+            <label>
+              <span>Display name</span>
+              <input type="text" class="admin-display-name-input" value="${account.display_name || ''}" placeholder="Display name" />
+            </label>
+            <label>
+              <span>Reset password</span>
+              <input type="text" class="admin-password-input" placeholder="Leave blank to keep current password" />
+            </label>
+          </div>
+          <div class="admin-account-actions">
+            <button type="button" class="btn-primary admin-save-account-btn">Save changes</button>
+            <button type="button" class="btn-secondary admin-reset-streak-btn">Reset streak</button>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    async function saveAdminAccount(button) {
+      const card = button.closest('.admin-account-item');
+      if (!card || !currentSession?.token) return;
+
+      const user = card.dataset.user;
+      const role = card.querySelector('.admin-role-select')?.value;
+      const displayName = card.querySelector('.admin-display-name-input')?.value.trim() || '';
+      const password = card.querySelector('.admin-password-input')?.value || '';
+      const status = document.getElementById('admin-account-status');
+
+      const payload = {
+        role,
+        display_name: displayName,
+      };
+      if (password.trim()) {
+        payload.password = password;
+      }
+
+      const res = await fetch(`${API_BASE}/api/admin/accounts/${encodeURIComponent(user)}/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      status.innerHTML = res.ok ? `<strong>✓ ${data.message}</strong>` : `<strong>⚠ ${data.detail || 'Unable to update account.'}</strong>`;
+      if (res.ok) {
+        await loadAdminAccounts();
+      }
+    }
+
+    async function resetAdminStreak(button) {
+      const card = button.closest('.admin-account-item');
+      if (!card || !currentSession?.token) return;
+      const user = card.dataset.user;
+      const status = document.getElementById('admin-account-status');
+      const res = await fetch(`${API_BASE}/api/admin/accounts/${encodeURIComponent(user)}/reset-streak`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ reason: 'Illegal parking suspected' }),
+      });
+      const data = await res.json();
+      status.innerHTML = res.ok ? `<strong>✓ ${data.message}</strong>` : `<strong>⚠ ${data.detail || 'Unable to reset streak.'}</strong>`;
+      if (res.ok) {
+        await loadAdminAccounts();
+      }
     }
 
     async function loadAppConfig() {
       try {
-        const res = await fetch(`${API_BASE}/api/status`);
+        const res = await fetch(`${API_BASE}/api/app-config`);
         if (res.ok) {
           const data = await res.json();
           devLoginMode = Boolean(data.dev_login_mode);
+          if (currentHotspots.length) {
+            renderHotspotMap(currentHotspots, currentMappedReportsCount);
+          }
         }
       } catch {
         devLoginMode = false;
@@ -1158,72 +2068,211 @@
     }
 
     async function loadRewardUsePanel() {
-      const list = document.getElementById('claimed-rewards-list');
-      const instructions = document.getElementById('reward-use-instructions');
-      const status = document.getElementById('reward-use-status');
-      if (!list || !instructions || !status) {
+      const balance = document.getElementById('points-balance');
+      const lifetime = document.getElementById('points-lifetime');
+      const nextReward = document.getElementById('points-next-reward');
+      const activityCount = document.getElementById('points-activity-count');
+      const streak = document.getElementById('points-streak');
+      const multiplier = document.getElementById('points-multiplier');
+      const storeGrid = document.getElementById('points-store-grid');
+      const historyList = document.getElementById('points-history-list');
+      const historyCopy = document.getElementById('points-history-copy');
+      const rideHistoryList = document.getElementById('ride-history-list');
+      const parkingHistoryList = document.getElementById('parking-history-list');
+      const parkingIncidentList = document.getElementById('parking-incident-list');
+      const activeBikeId = document.getElementById('active-bike-id');
+      const scanStatus = document.getElementById('scan-bike-status');
+      const status = document.getElementById('points-wallet-status');
+      if (!balance || !lifetime || !nextReward || !activityCount || !streak || !multiplier || !storeGrid || !historyList || !historyCopy || !rideHistoryList || !parkingHistoryList || !parkingIncidentList || !activeBikeId || !scanStatus || !status) {
         return;
       }
 
       const user = currentSession?.user;
       if (!user) {
-        list.innerHTML = '<p class="small-text">Log in to view approved rewards.</p>';
+        balance.textContent = '0';
+        lifetime.textContent = '0';
+        activityCount.textContent = '0';
+        streak.textContent = '0';
+        multiplier.textContent = '1.00x';
+        nextReward.textContent = 'Log in to view your balance';
+        storeGrid.innerHTML = '<div class="hotspot-empty compact">Log in to browse the points catalog.</div>';
+        historyList.innerHTML = '<div class="hotspot-empty compact">No point activity yet.</div>';
+        rideHistoryList.innerHTML = '<div class="hotspot-empty compact">No rides logged yet.</div>';
+        parkingHistoryList.innerHTML = '<div class="hotspot-empty compact">No parking logs yet.</div>';
+        parkingIncidentList.innerHTML = '<div class="hotspot-empty compact">No parking incidents on record.</div>';
+        activeBikeId.textContent = 'None linked';
+        scanStatus.innerHTML = '';
+        historyCopy.textContent = 'Your latest earnings and redemptions will appear here.';
         return;
       }
 
       const res = await fetch(`${API_BASE}/api/rewards/${encodeURIComponent(user)}`);
+      const data = await res.json();
       if (!res.ok) {
-        list.innerHTML = '<p class="small-text">Unable to load reward status.</p>';
+        storeGrid.innerHTML = '<div class="hotspot-empty compact">Unable to load the points catalog.</div>';
+        historyList.innerHTML = '<div class="hotspot-empty compact">Unable to load point activity.</div>';
         return;
       }
 
-      const data = await res.json();
-      const claimed = data.claimed_rewards || [];
-      const used = data.used_rewards || [];
+      const pointsBalance = data.points_balance || 0;
+      const lifetimePoints = data.lifetime_points || 0;
+      const pointsHistory = data.points_history || [];
+      const catalog = data.catalog || [];
+      const pointsToNextReward = data.points_to_next_reward || 0;
+      const goodActionStreak = data.good_action_streak || 0;
+      const streakMultiplier = Number(data.streak_multiplier || 1);
+      const pointsToNextStreak = data.points_to_next_streak || 0;
+      const rideHistory = data.ride_history || [];
+      const parkingHistory = data.parking_history || [];
+      const parkingIncidents = data.parking_incidents || [];
+      const linkedBikeId = data.active_bike_id || null;
 
-      if (claimed.length === 0) {
-        list.innerHTML = '<p class="small-text">No claimed rewards yet.</p>';
-      } else {
-        list.innerHTML = claimed.map((reward) => `
-          <div class="claimed-reward-item">
-            <span>${reward}</span>
-            <button type="button" class="use-reward-btn" data-reward="${reward}">Use reward</button>
+      balance.textContent = String(pointsBalance);
+      lifetime.textContent = String(lifetimePoints);
+      activityCount.textContent = String(pointsHistory.length);
+      streak.textContent = String(goodActionStreak);
+      multiplier.textContent = `${streakMultiplier.toFixed(2)}x`;
+      activeBikeId.textContent = linkedBikeId || 'None linked';
+      nextReward.textContent = pointsToNextReward > 0
+        ? `${pointsToNextReward} pts until your next reward item • ${pointsToNextStreak} good action${pointsToNextStreak === 1 ? '' : 's'} until your next multiplier`
+        : `You can redeem now • ${pointsToNextStreak} good action${pointsToNextStreak === 1 ? '' : 's'} until your next multiplier`;
+
+      storeGrid.innerHTML = catalog.map((reward) => `
+        <article class="points-store-item">
+          <div class="points-store-topline">
+            <span class="points-store-category">${reward.category}</span>
+            <span class="points-store-cost">${reward.cost} pts</span>
           </div>
+          <strong>${reward.name}</strong>
+          <p>${reward.description}</p>
+          <button type="button" class="btn-primary redeem-points-btn" data-reward-id="${reward.id}" ${pointsBalance < reward.cost ? 'disabled' : ''}>
+            ${pointsBalance < reward.cost ? 'Need more points' : 'Redeem now'}
+          </button>
+        </article>
+      `).join('');
+
+      if (!pointsHistory.length) {
+        historyList.innerHTML = '<div class="hotspot-empty compact">No point activity yet.</div>';
+        historyCopy.textContent = 'Start reporting issues to build your first reward streak.';
+      } else {
+        historyList.innerHTML = pointsHistory.slice().reverse().map((entry) => `
+          <article class="points-history-item">
+            <div>
+              <strong>${entry.label}</strong>
+              <span>${entry.reason ? `${entry.reason} • ` : ''}${entry.multiplier ? `${Number(entry.multiplier).toFixed(2)}x • ` : ''}${entry.date || 'Recently'}</span>
+            </div>
+            <div class="points-history-value ${entry.points >= 0 ? 'positive' : 'negative'}">${entry.points >= 0 ? '+' : ''}${entry.points} pts</div>
+          </article>
         `).join('');
+        historyCopy.textContent = 'Your latest earnings and redemptions are tracked here.';
       }
 
-      if (used.length > 0) {
-        instructions.innerHTML = `You have used ${used.length} reward${used.length === 1 ? '' : 's'} already. Choose a claimed reward to use.`;
-      } else {
-        instructions.innerHTML = 'Approved reports will add rewards here automatically. Use them here to apply the reward to your account.';
-      }
+      rideHistoryList.innerHTML = rideHistory.length
+        ? rideHistory.slice().reverse().map((entry) => `
+          <article class="mini-history-item">
+            <div>
+              <strong>${entry.bike_id}</strong>
+              <span>${entry.date || 'Recently'} • ${entry.notes || 'Ride logged'}</span>
+            </div>
+            <div class="points-history-value positive">+${entry.points} pts</div>
+          </article>
+        `).join('')
+        : '<div class="hotspot-empty compact">No rides logged yet.</div>';
+
+      parkingHistoryList.innerHTML = parkingHistory.length
+        ? parkingHistory.slice().reverse().map((entry) => `
+          <article class="mini-history-item">
+            <div>
+              <strong>${entry.bike_id}</strong>
+              <span>${entry.date || 'Recently'} • ${entry.notes || 'Parking logged'}</span>
+            </div>
+            <div class="points-history-value positive">+${entry.points} pts</div>
+          </article>
+        `).join('')
+        : '<div class="hotspot-empty compact">No parking logs yet.</div>';
+
+      parkingIncidentList.innerHTML = parkingIncidents.length
+        ? parkingIncidents.slice().reverse().map((entry) => `
+          <article class="mini-history-item incident">
+            <div>
+              <strong>${entry.bike_id}</strong>
+              <span>${entry.date || 'Recently'} • ${entry.reason || 'Illegal parking suspected'}</span>
+            </div>
+            <div class="points-history-value negative">Tracked</div>
+          </article>
+        `).join('')
+        : '<div class="hotspot-empty compact">No parking incidents on record.</div>';
     }
 
-    async function useReward(reward) {
+    async function redeemPoints(rewardId) {
+      const status = document.getElementById('points-wallet-status');
       if (!currentSession?.token) {
-        document.getElementById('reward-use-status').innerHTML = '<strong>⚠ Please log in to use rewards.</strong>';
+        status.innerHTML = '<strong>⚠ Please log in to redeem points.</strong>';
         return;
       }
 
       const res = await fetch(`${API_BASE}/api/use-reward`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ reward }),
+        body: JSON.stringify({ reward: rewardId }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        document.getElementById('reward-use-status').innerHTML = `<strong>⚠ ${data.detail}</strong>`;
-        return;
+      status.innerHTML = res.ok ? `<strong>✓ ${data.message}</strong>` : `<strong>⚠ ${data.detail}</strong>`;
+      if (res.ok) {
+        loadRewardUsePanel();
       }
-      document.getElementById('reward-use-status').innerHTML = `<strong>✓ ${data.message}</strong>`;
-      loadRewardUsePanel();
     }
 
-    document.getElementById('reward-use-panel')?.addEventListener('click', async (event) => {
-      const button = event.target.closest('.use-reward-btn');
-      if (!button) return;
-      await useReward(button.dataset.reward);
-    });
+    async function logBikeActivity(kind) {
+      const bikeIdInput = document.getElementById('ride-bike-id');
+      const notesInput = document.getElementById('ride-notes');
+      const status = document.getElementById('points-wallet-status');
+      if (!currentSession?.token) {
+        status.innerHTML = '<strong>⚠ Please log in to log bike activity.</strong>';
+        return;
+      }
+      const bikeId = bikeIdInput?.value.trim();
+      if (!bikeId) {
+        status.innerHTML = '<strong>⚠ Enter a bike ID first.</strong>';
+        return;
+      }
+      const endpoint = kind === 'parking' ? 'parking/log' : 'rides/log';
+      const res = await fetch(`${API_BASE}/api/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ bike_id: bikeId, notes: notesInput?.value.trim() || '' }),
+      });
+      const data = await res.json();
+      status.innerHTML = res.ok ? `<strong>✓ ${data.message}</strong>` : `<strong>⚠ ${data.detail}</strong>`;
+      if (res.ok) {
+        if (bikeIdInput) bikeIdInput.value = '';
+        if (notesInput) notesInput.value = '';
+        loadRewardUsePanel();
+      }
+    }
+
+    async function scanBikeQr() {
+      const bikeIdInput = document.getElementById('scan-bike-id');
+      const scanStatus = document.getElementById('scan-bike-status');
+      if (!currentSession?.token) {
+        scanStatus.innerHTML = '<strong>⚠ Please log in to scan a bike QR.</strong>';
+        return;
+      }
+      const bikeId = bikeIdInput?.value.trim() || 'BK-101';
+      const res = await fetch(`${API_BASE}/api/rentals/scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ bike_id: bikeId }),
+      });
+      const data = await res.json();
+      scanStatus.innerHTML = res.ok
+        ? `<strong>✓ ${data.message}</strong>${data.warning ? `<br />${data.warning}` : ''}`
+        : `<strong>⚠ ${data.detail}</strong>`;
+      if (res.ok) {
+        if (bikeIdInput) bikeIdInput.value = '';
+        loadRewardUsePanel();
+      }
+    }
 
     // Issue type change handler
     document.getElementById('issue-type').addEventListener('change', (e) => {
@@ -1364,6 +2413,38 @@
       }
     });
 
+    document.getElementById('tutorial-modal')?.addEventListener('click', (event) => {
+      if (event.target.id === 'tutorial-modal') {
+        closeTutorialModal();
+      }
+    });
+
+    document.getElementById('points-promo-modal')?.addEventListener('click', (event) => {
+      if (event.target.id === 'points-promo-modal') {
+        closePointsPromoModal();
+      }
+    });
+
+    document.getElementById('close-tutorial-modal')?.addEventListener('click', closeTutorialModal);
+    document.getElementById('close-points-promo-modal')?.addEventListener('click', () => closePointsPromoModal());
+    document.getElementById('dismiss-points-promo-btn')?.addEventListener('click', () => closePointsPromoModal());
+    document.getElementById('open-points-wallet-btn')?.addEventListener('click', () => {
+      closePointsPromoModal();
+      activateTab('rewards');
+    });
+    document.getElementById('tutorial-prev-btn')?.addEventListener('click', () => {
+      currentTutorialStep = Math.max(0, currentTutorialStep - 1);
+      renderTutorialStep();
+    });
+    document.getElementById('tutorial-next-btn')?.addEventListener('click', () => {
+      if (currentTutorialStep >= tutorialSteps.length - 1) {
+        closeTutorialModal();
+        return;
+      }
+      currentTutorialStep += 1;
+      renderTutorialStep();
+    });
+
     // Rewards
     document.getElementById('login-screen-btn').addEventListener('click', async () => {
       const user = document.getElementById('login-screen-email').value.trim();
@@ -1402,7 +2483,6 @@
         headers: authHeaders(),
       });
       clearSession();
-      document.getElementById('account-summary').innerHTML = '<strong>Logged out.</strong>';
     });
 
       document.getElementById('sidebar-logout-fixed').addEventListener('click', async () => {
@@ -1411,7 +2491,6 @@
           headers: authHeaders(),
         });
         clearSession();
-        document.getElementById('account-summary').innerHTML = '<strong>Logged out.</strong>';
       });
 
     document.getElementById('sidebar-profile-avatar').addEventListener('click', () => {
@@ -1562,9 +2641,48 @@
       showReportHistory();
     });
 
+    document.getElementById('dashboard-report-cta')?.addEventListener('click', () => {
+      if (currentSession?.role === 'admin') {
+        const adminCard = document.getElementById('admin-account-card');
+        adminCard?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      openTutorialModal();
+    });
+
     // Create maintenance request
     document.getElementById('create-maintenance-btn').addEventListener('click', () => {
       alert('Maintenance request feature coming soon!');
+    });
+
+    document.getElementById('admin-account-list')?.addEventListener('click', async (event) => {
+      const saveButton = event.target.closest('.admin-save-account-btn');
+      if (saveButton) {
+        await saveAdminAccount(saveButton);
+        return;
+      }
+      const resetButton = event.target.closest('.admin-reset-streak-btn');
+      if (resetButton) {
+        await resetAdminStreak(resetButton);
+      }
+    });
+
+    document.getElementById('points-store-grid')?.addEventListener('click', async (event) => {
+      const button = event.target.closest('.redeem-points-btn');
+      if (!button || button.disabled) return;
+      await redeemPoints(button.dataset.rewardId);
+    });
+
+    document.getElementById('log-ride-btn')?.addEventListener('click', async () => {
+      await logBikeActivity('ride');
+    });
+
+    document.getElementById('log-parking-btn')?.addEventListener('click', async () => {
+      await logBikeActivity('parking');
+    });
+
+    document.getElementById('scan-bike-btn')?.addEventListener('click', async () => {
+      await scanBikeQr();
     });
 
     // Initialize

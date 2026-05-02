@@ -15,7 +15,6 @@ import mimetypes
 import sys
 import urllib.error
 import urllib.request
-from collections import Counter
 
 app = FastAPI(title="Bike Patrol Rewards", version="0.1")
 app.add_middleware(
@@ -59,12 +58,19 @@ class RewardRequest(BaseModel):
     action: str = Field(..., title="Reward action requested")
 
 class UseRewardRequest(BaseModel):
-    reward: str = Field(..., title="Reward to use")
+    reward: str = Field(..., title="Reward identifier to redeem")
 
 class HelpRequest(BaseModel):
     user: str = Field(..., title="User name or email")
     bike_id: str = Field(..., title="Bike identifier")
     notes: Optional[str] = Field(None, title="Optional notes")
+
+class RideActivityRequest(BaseModel):
+    bike_id: str = Field(..., title="Bike identifier")
+    notes: Optional[str] = Field(None, title="Optional notes")
+
+class ScanRentalRequest(BaseModel):
+    bike_id: Optional[str] = Field(None, title="Bike identifier from the QR code")
 
 class ParkingRedeemRequest(BaseModel):
     user: str = Field(..., title="User name or email")
@@ -97,6 +103,15 @@ class ProfileUpdateRequest(BaseModel):
     email: Optional[str] = Field(None, title="Email address")
     phone_number: Optional[str] = Field(None, title="Phone number")
 
+class AdminAccountUpdateRequest(BaseModel):
+    role: Optional[str] = Field(None, title="Updated role")
+    password: Optional[str] = Field(None, title="Updated password")
+    display_name: Optional[str] = Field(None, title="Updated display name")
+
+
+class StreakResetRequest(BaseModel):
+    reason: Optional[str] = Field("Illegal parking suspected", title="Reason for resetting the streak")
+
 class ReportSummary(BaseModel):
     total_reports: int
     recent_reports: List[Report]
@@ -110,6 +125,9 @@ REWARD_LIMIT_PER_DAY = 3
 reward_store = {}
 SESSIONS: Dict[str, str] = {}
 ROLE_PRIORITY = {"admin": 3, "maintenance": 2, "user": 1}
+STREAK_STEP = 5
+STREAK_BONUS = 0.25
+DUMMY_BIKE_ID = "BK-101"
 CSV_DIR = Path(__file__).resolve().parents[1] / "csv"
 REPORT_IMAGES_DIR = CSV_DIR / "report-images"
 REPORTS_CSV_PATH = CSV_DIR / "reports.csv"
@@ -135,6 +153,7 @@ REPORT_CSV_FIELDS = [
     "review_action",
     "reward_granted",
     "reward_voucher",
+    "points_awarded",
     "image_file",
 ]
 
@@ -284,6 +303,15 @@ def parse_csv_float(value: Optional[str]) -> Optional[float]:
         return None
 
 
+def parse_csv_int(value: Optional[str]) -> int:
+    if value is None or str(value).strip() == "":
+        return 0
+    try:
+        return int(float(value))
+    except ValueError:
+        return 0
+
+
 def configure_csv_field_size_limit() -> None:
     try:
         csv.field_size_limit(sys.maxsize)
@@ -347,6 +375,7 @@ def normalize_report_record(report: dict) -> dict:
         normalized[key] = parse_csv_bool(normalized.get(key, False))
     for key in ["location_lat", "location_lng", "location_accuracy"]:
         normalized[key] = parse_csv_float(normalized.get(key))
+    normalized["points_awarded"] = parse_csv_int(normalized.get("points_awarded"))
     if not normalized.get("status"):
         normalized["status"] = "pending"
     return normalized
@@ -400,35 +429,169 @@ def is_dev_login_mode() -> bool:
     return os.getenv("DEV_LOGIN_MODE", "0").strip() == "1"
 
 
-def get_reward_vouchers_for_user(user: str) -> List[str]:
-    user_key = user.lower().strip()
+def points_for_issue(issue_type: Optional[str]) -> int:
+    points_table = {
+        "illegal_parking": 80,
+        "faulty": 110,
+        "toppled": 140,
+        "others": 60,
+        "general": 60,
+    }
+    return points_table.get(str(issue_type or "general"), 60)
+
+
+def reward_catalog() -> List[dict]:
     return [
-        str(report.get("reward_voucher"))
-        for report in REPORTS
-        if report.get("reporter", "").lower() == user_key and report.get("reward_granted") and report.get("reward_voucher")
+        {"id": "mcd-fries", "name": "Fries Treat", "cost": 120, "category": "Food", "description": "A snack-sized reward for quick point redemptions."},
+        {"id": "coffee-run", "name": "Coffee Run", "cost": 180, "category": "Drinks", "description": "Redeem a drink-style perk after a few successful reports."},
+        {"id": "ride-credit", "name": "Ride Credit", "cost": 260, "category": "Transport", "description": "Convert points into transport credit for your next trip."},
+        {"id": "community-bonus", "name": "Community Bonus Pack", "cost": 420, "category": "Featured", "description": "A bigger reward tier for regular contributors."},
     ]
 
 
-def sync_user_reward_state(account: dict) -> None:
+def get_catalog_reward(reward_id: str) -> Optional[dict]:
+    return next((item for item in reward_catalog() if item["id"] == reward_id), None)
+
+
+def streak_multiplier_for_count(streak_count: int) -> float:
+    return round(1 + (streak_count // STREAK_STEP) * STREAK_BONUS, 2)
+
+
+def next_streak_target(streak_count: int) -> int:
+    return ((streak_count // STREAK_STEP) + 1) * STREAK_STEP
+
+
+def ensure_points_fields(account: dict) -> None:
+    account.setdefault("report_points_earned", 0)
+    account.setdefault("help_points_earned", 0)
+    account.setdefault("points_balance", 0)
+    account.setdefault("lifetime_points", 0)
+    account.setdefault("points_spent", 0)
+    account.setdefault("points_history", [])
+    account.setdefault("good_action_streak", 0)
+    account.setdefault("streak_multiplier", 1.0)
+    account.setdefault("usage_points_earned", 0)
+    account.setdefault("ride_history", [])
+    account.setdefault("parking_history", [])
+    account.setdefault("active_bike_id", None)
+    account.setdefault("rental_history", [])
+    account.setdefault("parking_incidents", [])
+
+
+def points_for_report(report: dict) -> int:
+    awarded = parse_csv_int(report.get("points_awarded"))
+    if awarded:
+        return awarded
+    if report.get("reward_granted"):
+        return points_for_issue(report.get("issue_type"))
+    return 0
+
+
+def sync_user_points_state(account: dict) -> None:
+    ensure_points_fields(account)
     user_key = account["user"].lower().strip()
-    approved_rewards = get_reward_vouchers_for_user(user_key)
-    used_rewards = list(account.get("used_rewards", []))
-    used_counter = Counter(used_rewards)
+    derived_report_points = sum(
+        points_for_report(report)
+        for report in REPORTS
+        if report.get("reporter", "").lower() == user_key and report.get("status") == "completed"
+    )
+    if int(account.get("report_points_earned", 0)) < derived_report_points:
+        account["report_points_earned"] = derived_report_points
+    report_points = int(account.get("report_points_earned", 0))
+    help_points = int(account.get("help_points_earned", 0))
+    usage_points = int(account.get("usage_points_earned", 0))
+    points_spent = int(account.get("points_spent", 0))
+    lifetime_points = report_points + help_points + usage_points
+    account["lifetime_points"] = lifetime_points
+    account["points_balance"] = max(lifetime_points - points_spent, 0)
+    account["streak_multiplier"] = streak_multiplier_for_count(int(account.get("good_action_streak", 0)))
 
-    claimed_rewards: List[str] = []
-    for voucher in approved_rewards:
-        if used_counter[voucher] > 0:
-            used_counter[voucher] -= 1
-            continue
-        claimed_rewards.append(voucher)
 
-    account["claimed_rewards"] = claimed_rewards
-    account["used_rewards"] = used_rewards
+def award_points_for_good_action(account: dict, base_points: int, label: str, action_date: str, bucket_key: str) -> tuple[int, float, int]:
+    ensure_points_fields(account)
+    account["good_action_streak"] = int(account.get("good_action_streak", 0)) + 1
+    multiplier = streak_multiplier_for_count(account["good_action_streak"])
+    awarded_points = int(round(base_points * multiplier))
+    account[bucket_key] = int(account.get(bucket_key, 0)) + awarded_points
+    account["streak_multiplier"] = multiplier
+    sync_user_points_state(account)
+    account["points_history"].append({
+        "type": "earn",
+        "label": label,
+        "points": awarded_points,
+        "base_points": base_points,
+        "multiplier": multiplier,
+        "streak": account["good_action_streak"],
+        "date": action_date,
+    })
+    return awarded_points, multiplier, account["good_action_streak"]
 
 
-def next_reward_voucher_for_user(user: str) -> str:
-    approved_count = len(get_reward_vouchers_for_user(user))
-    return AVAILABLE_VOUCHERS[approved_count % len(AVAILABLE_VOUCHERS)]
+def reset_streak(account: dict, reason: str, action_date: str) -> None:
+    ensure_points_fields(account)
+    account["good_action_streak"] = 0
+    account["streak_multiplier"] = 1.0
+    sync_user_points_state(account)
+    account["points_history"].append({
+        "type": "reset",
+        "label": "Streak reset",
+        "points": 0,
+        "reason": reason,
+        "date": action_date,
+    })
+
+
+def award_usage_points(account: dict, base_points: int, label: str, action_date: str, history_bucket: str, bike_id: str, notes: Optional[str] = None) -> int:
+    ensure_points_fields(account)
+    awarded_points = int(base_points)
+    account["usage_points_earned"] = int(account.get("usage_points_earned", 0)) + awarded_points
+    sync_user_points_state(account)
+    event = {
+        "bike_id": bike_id,
+        "points": awarded_points,
+        "notes": notes or "",
+        "date": action_date,
+        "label": label,
+    }
+    account.setdefault(history_bucket, []).append(event)
+    account["points_history"].append({
+        "type": "earn",
+        "label": label,
+        "points": awarded_points,
+        "date": action_date,
+        "reason": "Mobility usage reward",
+    })
+    return awarded_points
+
+
+def find_active_renter_for_bike(bike_id: str) -> Optional[dict]:
+    normalized_bike_id = bike_id.strip().upper()
+    for account in USER_ACCOUNTS.values():
+        ensure_points_fields(account)
+        if str(account.get("active_bike_id") or "").strip().upper() == normalized_bike_id:
+            return account
+    return None
+
+
+def flag_illegal_parking_for_bike(bike_id: str, reason: str, action_date: str) -> Optional[dict]:
+    renter_account = find_active_renter_for_bike(bike_id)
+    if not renter_account:
+        return None
+    reset_streak(renter_account, reason, action_date)
+    incident = {
+        "bike_id": bike_id,
+        "reason": reason,
+        "date": action_date,
+    }
+    renter_account.setdefault("parking_incidents", []).append(incident)
+    renter_account["points_history"].append({
+        "type": "incident",
+        "label": "Illegal parking flag",
+        "points": 0,
+        "reason": reason,
+        "date": action_date,
+    })
+    return renter_account
 
 
 def ensure_report_ids():
@@ -468,12 +631,6 @@ def build_proxy_users():
     return users
 
 PROXY_USERS = build_proxy_users()
-AVAILABLE_VOUCHERS = [
-    "CDC Food Voucher",
-    "CDC Shopping Discount",
-    "CDC Transport Subsidy",
-    "CDC Bike Care Coupon"
-]
 
 
 def get_user_account(user: str):
@@ -485,10 +642,18 @@ def get_user_account(user: str):
         "phone_number": "",
         "role": role,
         "reports": [],
-        "parking_points": 0,
         "help_events": [],
-        "claimed_rewards": [],
-        "used_rewards": [],
+        "report_points_earned": 0,
+        "help_points_earned": 0,
+        "usage_points_earned": 0,
+        "points_balance": 0,
+        "lifetime_points": 0,
+        "points_spent": 0,
+        "points_history": [],
+        "good_action_streak": 0,
+        "streak_multiplier": 1.0,
+        "ride_history": [],
+        "parking_history": [],
         "profile_photo": None,
         "settings": {
             "theme": "light",
@@ -499,6 +664,7 @@ def get_user_account(user: str):
     account.setdefault("phone_number", "")
     account.setdefault("profile_photo", None)
     account.setdefault("settings", {"theme": "light", "font_size": "medium"})
+    ensure_points_fields(account)
     account["user"] = user
     account["role"] = role
     return account
@@ -522,21 +688,28 @@ def get_current_user(authorization: Optional[str] = Header(None)):
 def build_user_summary(user: str):
     account = get_user_account(user)
     user_reports = [report for report in REPORTS if report.get("reporter", "").lower() == user.lower()]
-    sync_user_reward_state(account)
+    sync_user_points_state(account)
     return {
         "user": account["user"],
         "display_name": account.get("display_name", account["user"]),
         "phone_number": account.get("phone_number", ""),
         "role": account["role"],
-        "parking_points": account["parking_points"],
+        "points_balance": account["points_balance"],
+        "lifetime_points": account["lifetime_points"],
+        "good_action_streak": account.get("good_action_streak", 0),
+        "streak_multiplier": account.get("streak_multiplier", 1.0),
+        "points_to_next_streak": max(next_streak_target(account.get("good_action_streak", 0)) - account.get("good_action_streak", 0), 0),
         "settings": account.get("settings", {"theme": "light", "font_size": "medium"}),
         "profile_photo": account.get("profile_photo"),
         "total_reports": len(user_reports),
         "total_help_events": len(account["help_events"]),
-        "claimed_rewards": account["claimed_rewards"],
-        "used_rewards": account.get("used_rewards", []),
+        "points_history": account.get("points_history", [])[-10:],
         "recent_reports": user_reports[-10:],
         "recent_help_events": account["help_events"][-10:],
+        "recent_ride_history": account.get("ride_history", [])[-10:],
+        "recent_parking_history": account.get("parking_history", [])[-10:],
+        "active_bike_id": account.get("active_bike_id"),
+        "parking_incidents": account.get("parking_incidents", [])[-10:],
     }
 
 @app.get("/api/status")
@@ -551,12 +724,20 @@ def status():
         "total_reports": len(REPORTS),
         "pending_reports": pending_reports,
         "completed_reports": completed_reports,
-        "reward_limit_per_day": REWARD_LIMIT_PER_DAY,
-        "available_vouchers": AVAILABLE_VOUCHERS,
+        "reward_catalog": reward_catalog(),
         "proxy_accounts": [
             {"user": user, "role": info["role"]}
             for user, info in PROXY_USERS.items()
         ],
+    }
+
+
+@app.get("/api/app-config")
+def app_config():
+    load_env_file()
+    return {
+        "dev_login_mode": is_dev_login_mode(),
+        "google_maps_api_key": (os.getenv("GOOGLE_MAPS_API_KEY") or "").strip() or None,
     }
 
 @app.get("/api/reports", response_model=ReportSummary)
@@ -646,6 +827,7 @@ def submit_report(
         "review_action": None,
         "reward_granted": False,
         "reward_voucher": None,
+        "points_awarded": 0,
     }
     REPORTS.append(report_dict)
     save_reports_to_csv()
@@ -694,17 +876,33 @@ def review_report(
     report["reviewed_by"] = current_user_key
     report["review_notes"] = (notes or "").strip() or None
     report["review_action"] = normalized_action
+    award_message = ""
     if normalized_action == "approve" and not report.get("reward_granted"):
         reporter_account = get_user_account(report["reporter"])
-        reward_voucher = next_reward_voucher_for_user(report["reporter"])
         report["reward_granted"] = True
-        report["reward_voucher"] = reward_voucher
-        sync_user_reward_state(reporter_account)
+        report["reward_voucher"] = None
+        awarded_points, multiplier, streak_count = award_points_for_good_action(
+            reporter_account,
+            points_for_issue(report.get("issue_type")),
+            f"{format_location_text(report.get('location_lat'), report.get('location_lng'), report.get('location_accuracy')) or 'Verified report'} approved",
+            date.today().isoformat(),
+            "report_points_earned",
+        )
+        report["points_awarded"] = awarded_points
+        award_message = f" {report['points_awarded']} points added with a {multiplier:.2f}x streak multiplier."
+        if report.get("issue_type") == "illegal_parking":
+            flagged_account = flag_illegal_parking_for_bike(
+                report["bike_id"],
+                "Illegal parking confirmed by maintenance review",
+                date.today().isoformat(),
+            )
+            if flagged_account:
+                award_message += f" The linked renter {flagged_account['user']} had their streak reset."
     save_reports_to_csv()
     action_word = "approved" if normalized_action == "approve" else "rejected"
 
     return {
-        "message": f"Report {action_word} successfully.",
+        "message": f"Report {action_word} successfully.{award_message}",
         "report": report,
     }
 
@@ -716,13 +914,108 @@ def parking_help(help_request: HelpRequest):
         "bike_id": help_request.bike_id,
         "notes": help_request.notes or "Helped keep the bicycle inside the assigned parking spot.",
         "date": today,
+        "base_points": 25,
     }
     account["help_events"].append(event)
-    account["parking_points"] += 1
+    awarded_points, multiplier, streak_count = award_points_for_good_action(
+        account,
+        event["base_points"],
+        "Parking help bonus",
+        today,
+        "help_points_earned",
+    )
+    event["points"] = awarded_points
+    event["multiplier"] = multiplier
+    event["streak"] = streak_count
     return {
-        "message": "Parking help logged. You earned a Parking Point.",
-        "parking_points": account["parking_points"],
+        "message": f"Parking help logged. You earned {awarded_points} points with a {multiplier:.2f}x multiplier.",
+        "points_balance": account["points_balance"],
         "help_event": event,
+    }
+
+
+@app.post("/api/rides/log")
+def log_ride_activity(request: RideActivityRequest, authorization: Optional[str] = Header(None)):
+    current_user_key = validate_session_token(authorization)
+    account = get_user_account(current_user_key)
+    today = date.today().isoformat()
+    bike_id = request.bike_id.strip().upper()
+    account["active_bike_id"] = bike_id
+    awarded_points = award_usage_points(
+        account,
+        10,
+        "Bike rental ride",
+        today,
+        "ride_history",
+        bike_id,
+        request.notes or "Completed a bicycle rental trip.",
+    )
+    account.setdefault("rental_history", []).append({
+        "bike_id": bike_id,
+        "date": today,
+        "notes": request.notes or "Bike linked through ride logging.",
+        "method": "ride-log",
+    })
+    return {
+        "message": f"Ride logged. You earned {awarded_points} usage points.",
+        "points_balance": account["points_balance"],
+        "active_bike_id": account["active_bike_id"],
+        "ride_history": account.get("ride_history", [])[-10:],
+    }
+
+
+@app.post("/api/parking/log")
+def log_parking_activity(request: RideActivityRequest, authorization: Optional[str] = Header(None)):
+    current_user_key = validate_session_token(authorization)
+    account = get_user_account(current_user_key)
+    today = date.today().isoformat()
+    bike_id = request.bike_id.strip().upper()
+    awarded_points = award_usage_points(
+        account,
+        15,
+        "Proper bike parking",
+        today,
+        "parking_history",
+        bike_id,
+        request.notes or "Returned and parked the bicycle responsibly.",
+    )
+    if str(account.get("active_bike_id") or "").strip().upper() == bike_id:
+        account["active_bike_id"] = None
+    return {
+        "message": f"Parking logged. You earned {awarded_points} usage points.",
+        "points_balance": account["points_balance"],
+        "active_bike_id": account.get("active_bike_id"),
+        "parking_history": account.get("parking_history", [])[-10:],
+    }
+
+
+@app.post("/api/rentals/scan")
+def scan_bike_qr(request: ScanRentalRequest, authorization: Optional[str] = Header(None)):
+    current_user_key = validate_session_token(authorization)
+    account = get_user_account(current_user_key)
+    bike_id = (request.bike_id or DUMMY_BIKE_ID).strip().upper() or DUMMY_BIKE_ID
+    previous_renter = find_active_renter_for_bike(bike_id)
+    if previous_renter and previous_renter["user"].lower() != account["user"].lower():
+        previous_renter["active_bike_id"] = None
+    account["active_bike_id"] = bike_id
+    account.setdefault("rental_history", []).append({
+        "bike_id": bike_id,
+        "date": date.today().isoformat(),
+        "notes": "Bike linked through QR scan.",
+        "method": "qr-scan",
+    })
+    latest_incident = next(
+        (item for item in reversed(account.get("parking_incidents", [])) if str(item.get("bike_id") or "").strip().upper() == bike_id),
+        None,
+    )
+    return {
+        "message": f"Bike {bike_id} linked to your account.",
+        "bike_id": bike_id,
+        "active_bike_id": account["active_bike_id"],
+        "warning": (
+            f"This bike has a recent parking incident on record: {latest_incident['reason']}."
+            if latest_incident else None
+        ),
     }
 
 @app.post("/api/login")
@@ -883,6 +1176,92 @@ def current_user(authorization: Optional[str] = Header(None)):
 def proxy_accounts():
     return [{"user": user, "role": info["role"]} for user, info in PROXY_USERS.items()]
 
+@app.get("/api/admin/accounts")
+def admin_accounts(authorization: Optional[str] = Header(None)):
+    current_user_key = validate_session_token(authorization)
+    current_account = get_user_account(current_user_key)
+    if current_account["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can manage accounts.")
+
+    accounts = []
+    for user_key, info in PROXY_USERS.items():
+        account = get_user_account(user_key)
+        accounts.append({
+            "user": account.get("user", user_key),
+            "role": info["role"],
+            "display_name": account.get("display_name", user_key),
+            "phone_number": account.get("phone_number", ""),
+            "good_action_streak": account.get("good_action_streak", 0),
+            "streak_multiplier": account.get("streak_multiplier", 1.0),
+        })
+
+    return {
+        "accounts": sorted(accounts, key=lambda item: (ROLE_PRIORITY.get(item["role"], 0) * -1, item["user"].lower()))
+    }
+
+@app.post("/api/admin/accounts/{user}/update")
+def admin_update_account(user: str, request: AdminAccountUpdateRequest, authorization: Optional[str] = Header(None)):
+    current_user_key = validate_session_token(authorization)
+    current_account = get_user_account(current_user_key)
+    if current_account["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can manage accounts.")
+
+    target_user_key = user.lower().strip()
+    proxy = PROXY_USERS.get(target_user_key)
+    if not proxy:
+        raise HTTPException(status_code=404, detail="Account not found.")
+    if proxy["role"] == "admin":
+        raise HTTPException(status_code=403, detail="Admin accounts cannot be edited from this panel.")
+
+    if request.role:
+        normalized_role = request.role.strip().lower()
+        if normalized_role not in {"user", "maintenance"}:
+            raise HTTPException(status_code=400, detail="Role must be user or maintenance.")
+        proxy["role"] = normalized_role
+
+    if request.password is not None:
+        next_password = request.password.strip()
+        if not next_password:
+            raise HTTPException(status_code=400, detail="Password cannot be empty.")
+        proxy["password"] = next_password
+
+    account = USER_ACCOUNTS.get(target_user_key)
+    if account and request.display_name is not None:
+        next_display_name = request.display_name.strip()
+        account["display_name"] = next_display_name or account.get("display_name") or account.get("user", user)
+
+    refreshed_account = get_user_account(account["user"] if account else user)
+    return {
+        "message": "Account updated successfully.",
+        "account": {
+            "user": refreshed_account["user"],
+            "role": refreshed_account["role"],
+            "display_name": refreshed_account.get("display_name", refreshed_account["user"]),
+            "phone_number": refreshed_account.get("phone_number", ""),
+        },
+    }
+
+
+@app.post("/api/admin/accounts/{user}/reset-streak")
+def admin_reset_streak(user: str, request: StreakResetRequest, authorization: Optional[str] = Header(None)):
+    current_user_key = validate_session_token(authorization)
+    current_account = get_user_account(current_user_key)
+    if current_account["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can reset streaks.")
+
+    target_user_key = user.lower().strip()
+    if target_user_key not in PROXY_USERS:
+        raise HTTPException(status_code=404, detail="Account not found.")
+
+    account = get_user_account(target_user_key)
+    reset_reason = (request.reason or "Illegal parking suspected").strip() or "Illegal parking suspected"
+    reset_streak(account, reset_reason, date.today().isoformat())
+    return {
+        "message": "User streak reset successfully.",
+        "good_action_streak": account["good_action_streak"],
+        "streak_multiplier": account["streak_multiplier"],
+    }
+
 @app.get("/api/users/{user}")
 def user_summary(user: str, authorization: Optional[str] = Header(None)):
     current_user_key = validate_session_token(authorization)
@@ -895,17 +1274,22 @@ def user_summary(user: str, authorization: Optional[str] = Header(None)):
 @app.post("/api/redeem-parking-reward")
 def redeem_parking_reward(request: ParkingRedeemRequest):
     account = get_user_account(request.user)
-    if account["parking_points"] < request.points:
-        raise HTTPException(status_code=400, detail="Not enough parking points to redeem this reward.")
+    sync_user_points_state(account)
+    if account["points_balance"] < request.points:
+        raise HTTPException(status_code=400, detail="Not enough points to redeem this reward.")
 
-    account["parking_points"] -= request.points
-    voucher = request.reward_name or "Parking Helper Reward"
-    account["claimed_rewards"].append(voucher)
+    account["points_spent"] = int(account.get("points_spent", 0)) + request.points
+    sync_user_points_state(account)
+    account.setdefault("points_history", []).append({
+        "type": "redeem",
+        "label": request.reward_name or "Custom reward redemption",
+        "points": -request.points,
+        "date": date.today().isoformat(),
+    })
     return {
-        "message": "Parking reward claimed outside the daily voucher limit.",
-        "voucher": voucher,
-        "parking_points": account["parking_points"],
-        "claimed_rewards": account["claimed_rewards"],
+        "message": "Reward redeemed using points.",
+        "points_balance": account["points_balance"],
+        "reward_name": request.reward_name or "Custom reward redemption",
     }
 
 @app.post("/api/claim-reward")
@@ -916,28 +1300,43 @@ def claim_reward(request: RewardRequest):
 def use_reward(request: UseRewardRequest, authorization: Optional[str] = Header(None)):
     current_user_key = validate_session_token(authorization)
     account = get_user_account(current_user_key)
-    reward = request.reward
-    if reward not in account["claimed_rewards"]:
-        raise HTTPException(status_code=400, detail="This reward has not been claimed or is already used.")
-    account["claimed_rewards"].remove(reward)
-    account.setdefault("used_rewards", []).append(reward)
+    sync_user_points_state(account)
+    reward = get_catalog_reward(request.reward)
+    if not reward:
+        raise HTTPException(status_code=404, detail="Reward item not found.")
+    if account["points_balance"] < reward["cost"]:
+        raise HTTPException(status_code=400, detail="Not enough points to redeem this item.")
+    account["points_spent"] = int(account.get("points_spent", 0)) + reward["cost"]
+    sync_user_points_state(account)
+    account.setdefault("points_history", []).append({
+        "type": "redeem",
+        "label": reward["name"],
+        "points": -reward["cost"],
+        "date": date.today().isoformat(),
+    })
     return {
-        "message": f"Reward '{reward}' used successfully.",
-        "used_rewards": account["used_rewards"],
-        "claimed_rewards": account["claimed_rewards"],
+        "message": f"{reward['name']} redeemed successfully.",
+        "points_balance": account["points_balance"],
+        "points_history": account["points_history"][-10:],
     }
 
 @app.get("/api/rewards/{user}")
 def reward_status(user: str):
     account = get_user_account(user)
-    sync_user_reward_state(account)
+    sync_user_points_state(account)
     return {
         "user": user,
-        "claimed_today": len(get_reward_vouchers_for_user(user)),
-        "limit": REWARD_LIMIT_PER_DAY,
-        "claimed_vouchers": get_reward_vouchers_for_user(user),
-        "parking_points": account["parking_points"],
+        "points_balance": account["points_balance"],
+        "lifetime_points": account["lifetime_points"],
+        "good_action_streak": account.get("good_action_streak", 0),
+        "streak_multiplier": account.get("streak_multiplier", 1.0),
+        "points_to_next_streak": max(next_streak_target(account.get("good_action_streak", 0)) - account.get("good_action_streak", 0), 0),
+        "points_to_next_reward": max(min(item["cost"] for item in reward_catalog()) - account["points_balance"], 0),
+        "catalog": reward_catalog(),
         "help_events": account["help_events"],
-        "claimed_rewards": account["claimed_rewards"],
-        "used_rewards": account.get("used_rewards", []),
+        "points_history": account.get("points_history", [])[-10:],
+        "ride_history": account.get("ride_history", [])[-10:],
+        "parking_history": account.get("parking_history", [])[-10:],
+        "active_bike_id": account.get("active_bike_id"),
+        "parking_incidents": account.get("parking_incidents", [])[-10:],
     }
