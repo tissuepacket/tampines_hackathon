@@ -67,5 +67,5 @@ npm run dev
 ```
 
 3. Open the URL shown in the terminal, usually `http://127.0.0.1:5173`.
-# to open on the preview for windows: ctrl+shift+v
+## to open on the preview for windows: ctrl+shift+v
 
