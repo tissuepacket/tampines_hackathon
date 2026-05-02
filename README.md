@@ -7,7 +7,7 @@ This repository is split into two folders:
 
 ## Run the backend
 
-1. Activate the Python virtual environment:
+1. Activate the virtual environment:
 
 ```bash
 cd tampines_hackathon
