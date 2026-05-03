@@ -10,7 +10,7 @@
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
   />
-  <link rel="stylesheet" crossorigin href="/assets/index-BU-J0bnF.css">
+  <link rel="stylesheet" crossorigin href="/assets/index-DPqdsPtJ.css">
 </head>
 <body>
   <div class="login-screen" id="login-screen">
@@ -121,6 +121,14 @@
         <button class="nav-item" data-tab="rewards">
           <span class="nav-icon">🏆</span>
           Rewards
+        </button>
+        <button class="nav-item" data-tab="leaderboard">
+          <span class="nav-icon">👑</span>
+          Leaderboard
+        </button>
+        <button class="nav-item hidden" data-tab="control-center">
+          <span class="nav-icon">🛡️</span>
+          Control Center
         </button>
         <button class="nav-item" data-tab="account">
           <span class="nav-icon">⚙️</span>
@@ -259,22 +267,252 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <div class="dashboard-panel admin-account-card hidden" id="admin-account-card">
-                <div class="panel-heading">
-                  <div>
-                    <h2>Account management</h2>
-                    <p>Review user and maintenance accounts, update roles, and reset account passwords from the admin dashboard.</p>
-                  </div>
+          <div class="dashboard-story-grid">
+            <div class="dashboard-panel hotspot-alert-panel" id="hotspot-alert-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Live clutter alert</h2>
+                  <p>Turn hotspot pressure into a positive call to action before space gets blocked further.</p>
                 </div>
-                <div id="admin-account-status" class="message-box"></div>
-                <div id="admin-account-list" class="admin-account-list">
-                  <div class="hotspot-empty compact">Admin account tools will load here.</div>
+              </div>
+              <div id="hotspot-alert-content" class="dashboard-panel-body">
+                <div class="impact-empty">No alert data yet.</div>
+              </div>
+            </div>
+
+            <div class="dashboard-panel space-impact-panel" id="space-impact-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Space recovered</h2>
+                  <p>Show judges how much usable public space your community actions are winning back.</p>
                 </div>
+              </div>
+              <div id="space-impact-content" class="dashboard-panel-body">
+                <div class="impact-empty">Space recovery metrics will appear here.</div>
+              </div>
+            </div>
+
+            <div class="dashboard-panel mission-panel" id="mission-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Return-and-earn missions</h2>
+                  <p>Quick corrective actions that reward users more than ordinary rides.</p>
+                </div>
+              </div>
+              <div id="mission-panel-content" class="dashboard-panel-body">
+                <div class="impact-empty">Log in as a user to see live missions.</div>
+              </div>
+            </div>
+
+            <div class="dashboard-panel routing-panel hidden" id="routing-panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Maintenance priority routing</h2>
+                  <p>Ranked interventions based on hotspot pressure, repeat offenses, and public-space impact.</p>
+                </div>
+              </div>
+              <div id="routing-panel-content" class="dashboard-panel-body">
+                <div class="impact-empty">Staff routing guidance will appear here.</div>
               </div>
             </div>
           </div>
 
+        </section>
+      </div>
+
+      <div id="leaderboard" class="tab-content">
+        <section class="leaderboard-section">
+          <div class="leaderboard-hero">
+            <div>
+              <span class="leaderboard-overline">Community Arena</span>
+              <h1>Space-Saving Champions</h1>
+              <p class="subtitle">A live competition board for the riders who recover the most space, complete the most rescue missions, and keep the town tidy.</p>
+            </div>
+            <button type="button" class="leaderboard-hero-badge" id="leaderboard-rank-trigger" aria-haspopup="dialog" aria-controls="leaderboard-rank-modal">
+              <span>Season Rank</span>
+              <strong id="leaderboard-tier-name">Rookie Keeper</strong>
+            </button>
+          </div>
+
+          <div class="leaderboard-shell">
+            <div class="leaderboard-main-column">
+              <div class="leaderboard-panel leaderboard-podium-panel">
+                <div class="panel-heading">
+                  <div>
+                    <h2>Top podium</h2>
+                    <p>The strongest space-saving players right now.</p>
+                  </div>
+                </div>
+                <div id="leaderboard-podium" class="leaderboard-podium">
+                  <div class="impact-empty">Podium standings will appear here.</div>
+                </div>
+              </div>
+
+              <div class="leaderboard-panel leaderboard-table-panel">
+                <div class="panel-heading">
+                  <div>
+                    <h2>League table</h2>
+                    <p>Track score, recovery missions, streak pressure, and space reclaimed.</p>
+                  </div>
+                </div>
+                <div id="leaderboard-table" class="leaderboard-table">
+                  <div class="impact-empty">Leaderboard standings will appear here.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="leaderboard-side-column">
+              <div class="leaderboard-panel player-card-panel">
+                <div class="panel-heading">
+                  <div>
+                    <h2>Your player card</h2>
+                    <p>See your current tier, score pressure, and next climb target.</p>
+                  </div>
+                </div>
+                <div id="leaderboard-player-card" class="leaderboard-player-card">
+                  <div class="impact-empty">Log in to load your player card.</div>
+                </div>
+              </div>
+
+              <div class="leaderboard-panel leaderboard-rivalry-panel">
+                <div class="panel-heading">
+                  <div>
+                    <h2>Rivalries</h2>
+                    <p>Close score battles make the climb feel alive.</p>
+                  </div>
+                </div>
+                <div id="leaderboard-rivalries" class="leaderboard-rivalries">
+                  <div class="impact-empty">Rivalry cards will appear here.</div>
+                </div>
+              </div>
+
+              <div class="leaderboard-panel leaderboard-quests-panel">
+                <div class="panel-heading">
+                  <div>
+                    <h2>Quest bonuses</h2>
+                    <p>High-value actions that help players rank up faster.</p>
+                  </div>
+                </div>
+                <div class="leaderboard-quest-list">
+                  <article class="leaderboard-quest-card">
+                    <strong>Return-and-earn chain</strong>
+                    <span>Complete 3 corrective missions this week for a major rank push.</span>
+                  </article>
+                  <article class="leaderboard-quest-card">
+                    <strong>Clean finish streak</strong>
+                    <span>Stack good-action streaks without incidents to multiply your climb speed.</span>
+                  </article>
+                  <article class="leaderboard-quest-card">
+                    <strong>Hotspot hero</strong>
+                    <span>Clear a high-pressure illegal parking hotspot and reclaim public space fast.</span>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div id="leaderboard-rank-modal" class="modal-overlay hidden">
+        <div class="modal-content leaderboard-rank-modal">
+          <div class="modal-header">
+            <div>
+              <h2>Season rank ladder</h2>
+              <p class="subtitle">Every player climbs this ladder by earning points from helpful actions, rescue missions, and strong streaks.</p>
+            </div>
+            <button class="modal-close-btn" type="button" id="close-leaderboard-rank-modal">✕</button>
+          </div>
+          <div class="modal-body">
+            <div id="leaderboard-rank-summary" class="leaderboard-rank-summary">
+              <div class="impact-empty">Log in to see your current climb status.</div>
+            </div>
+            <div id="leaderboard-rank-list" class="leaderboard-rank-list">
+              <div class="impact-empty">Rank thresholds will appear here.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="control-center" class="tab-content hidden">
+        <section class="dashboard-section control-center-shell">
+          <h1>Admin Control Center</h1>
+          <p class="subtitle">Manage account health, onboarding, and intervention workflows without crowding the live operations dashboard.</p>
+
+          <div class="dashboard-panel admin-account-card" id="admin-account-card">
+            <div class="panel-heading">
+              <div>
+                <h2>Account operations</h2>
+                <p>Create new accounts, filter risk, and keep user and maintenance profiles tidy from one admin-only workspace.</p>
+              </div>
+            </div>
+            <div id="admin-account-overview" class="admin-overview-grid">
+              <div class="impact-empty">Admin overview metrics will appear here.</div>
+            </div>
+            <div class="admin-management-grid">
+              <section class="admin-create-panel">
+                <div class="admin-section-heading">
+                  <div>
+                    <h3>Create account</h3>
+                    <p>Spin up fresh user or maintenance accounts for demos and live operations.</p>
+                  </div>
+                </div>
+                <form id="admin-create-form" class="admin-create-form">
+                  <label>
+                    <span>Email</span>
+                    <input type="email" id="admin-create-email" placeholder="newuser@bikepatrol.test" />
+                  </label>
+                  <label>
+                    <span>Display name</span>
+                    <input type="text" id="admin-create-display-name" placeholder="A friendly display name" />
+                  </label>
+                  <label>
+                    <span>Phone number</span>
+                    <input type="text" id="admin-create-phone-number" placeholder="+65 9000 0000" />
+                  </label>
+                  <label>
+                    <span>Role</span>
+                    <select id="admin-create-role">
+                      <option value="user">User</option>
+                      <option value="maintenance">Maintenance</option>
+                    </select>
+                  </label>
+                  <label class="admin-create-form-full">
+                    <span>Temporary password</span>
+                    <input type="text" id="admin-create-password" placeholder="Enter a starter password" />
+                  </label>
+                  <button type="submit" class="btn-primary">Create account</button>
+                </form>
+              </section>
+
+              <section class="admin-directory-panel">
+                <div class="admin-section-heading">
+                  <div>
+                    <h3>Account directory</h3>
+                    <p>Search by email or display name, then act on streak risk, point health, and recent account activity.</p>
+                  </div>
+                </div>
+                <div class="admin-toolbar">
+                  <label class="admin-search-field">
+                    <span class="sr-only">Search accounts</span>
+                    <input type="search" id="admin-account-search" placeholder="Search users, maintenance, or email..." />
+                  </label>
+                  <div class="admin-filter-chips" id="admin-filter-chips">
+                    <button type="button" class="admin-filter-chip active" data-filter="all">All</button>
+                    <button type="button" class="admin-filter-chip" data-filter="user">Users</button>
+                    <button type="button" class="admin-filter-chip" data-filter="maintenance">Maintenance</button>
+                    <button type="button" class="admin-filter-chip" data-filter="attention">Needs attention</button>
+                  </div>
+                </div>
+                <div id="admin-account-list" class="admin-account-list">
+                  <div class="hotspot-empty compact">Admin account tools will load here.</div>
+                </div>
+              </section>
+            </div>
+            <div id="admin-account-status" class="message-box"></div>
+          </div>
         </section>
       </div>
 
@@ -496,6 +734,45 @@
             </div>
 
             <div class="points-store-panel">
+                <div class="dashboard-panel mission-brief-panel">
+                  <div class="points-history-header">
+                    <h3>Return-and-earn missions</h3>
+                    <p>Fix illegal parking, submit before/after proof, and earn a bigger corrective-action bonus.</p>
+                  </div>
+                  <div id="reward-mission-list" class="reward-mission-list">
+                    <div class="hotspot-empty compact">Log in to see corrective missions.</div>
+                  </div>
+                  <div class="mission-proof-form">
+                    <div class="ride-log-form mission-proof-row">
+                      <input type="text" id="mission-bike-id" placeholder="Bike ID to re-park" />
+                      <select id="mission-select">
+                        <option value="">Select a mission</option>
+                      </select>
+                    </div>
+                    <div class="ride-log-form mission-proof-row">
+                      <input type="file" id="mission-before-image" accept="image/*" />
+                      <input type="file" id="mission-after-image" accept="image/*" />
+                    </div>
+                    <div class="ride-log-form mission-proof-row">
+                      <input type="text" id="mission-notes" placeholder="What did you fix?" />
+                      <button type="button" class="btn-primary" id="complete-mission-btn">Complete mission</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="dashboard-panel guidance-panel">
+                  <div class="points-history-header">
+                    <h3>Parking zone guidance</h3>
+                    <p>Help riders avoid cluttered endings with a simple good / risky / bad zone guide.</p>
+                  </div>
+                  <div id="parking-guidance-card" class="parking-guidance-card">
+                    <div class="hotspot-empty compact">Guidance will appear after ride or parking activity.</div>
+                  </div>
+                  <div id="recovery-status-card" class="recovery-status-card">
+                    <div class="hotspot-empty compact">Recovery guidance will appear here.</div>
+                  </div>
+                </div>
+
                 <h3>Redeem with Points</h3>
                 <div class="points-store-grid" id="points-store-grid">
                   <div class="hotspot-empty compact">Log in to browse the points catalog.</div>
@@ -512,15 +789,18 @@
                     </div>
                     <div class="ride-log-form">
                       <input type="text" id="scan-bike-id" placeholder="Dummy QR bike ID e.g. BK-101" />
-                      <div class="ride-log-actions">
-                        <button type="button" class="btn-primary" id="scan-bike-btn">Scan QR and link bike</button>
-                      </div>
+                    <div class="ride-log-actions">
+                      <button type="button" class="btn-primary" id="scan-bike-btn">Scan QR and link bike</button>
                     </div>
-                    <div class="scan-summary-row">
-                      <span>Active linked bike</span>
-                      <strong id="active-bike-id">None linked</strong>
-                    </div>
-                    <div class="message-box" id="scan-bike-status"></div>
+                  </div>
+                  <div class="scan-summary-row">
+                    <span>Active linked bike</span>
+                    <strong id="active-bike-id">None linked</strong>
+                  </div>
+                  <div class="message-box" id="scan-bike-status"></div>
+                </div>
+                  <div class="before-you-leave-warning" id="before-you-leave-warning">
+                    <div class="hotspot-empty compact">A parking warning will appear here when you log a parking event in a risky area.</div>
                   </div>
                   <div class="ride-log-form">
                     <input type="text" id="ride-bike-id" placeholder="Bike ID e.g. BK-101" />
@@ -558,6 +838,15 @@
                   </div>
                   <div class="points-history-list" id="points-history-list">
                     <div class="hotspot-empty compact">No point activity yet.</div>
+                  </div>
+                </div>
+                <div class="points-history-panel">
+                  <div class="points-history-header">
+                    <h3>Community leaderboard</h3>
+                    <p>Helpful actions, recovery missions, and streaks all count toward this week’s champions.</p>
+                  </div>
+                  <div id="reward-leaderboard-list" class="leaderboard-list">
+                    <div class="hotspot-empty compact">Leaderboard data will appear here.</div>
                   </div>
                 </div>
               </div>
@@ -684,6 +973,21 @@
     let leafletLoaderPromise = null;
     let hotspotLeafletMap = null;
     let hotspotLeafletLayerGroup = null;
+    let adminAccountsCache = [];
+    let adminOverviewCache = null;
+    let adminAccountFilter = 'all';
+    const DEMO_HOTSPOT_REPORTS = [
+      { report_id: 'DEMO-1', reporter: 'demo@bikepatrol.test', bike_id: 'BK-211', issue_type: 'illegal_parking', description: 'Clustered beside mall drop-off.', location_address: 'Tampines Central, Singapore 529510', location_lat: 1.3532, location_lng: 103.9451, status: 'pending', ai_summary: 'Demo hotspot report.' },
+      { report_id: 'DEMO-2', reporter: 'demo@bikepatrol.test', bike_id: 'BK-212', issue_type: 'illegal_parking', description: 'Bike left across the path.', location_address: 'Tampines Central, Singapore 529510', location_lat: 1.3537, location_lng: 103.9447, status: 'completed', ai_summary: 'Demo hotspot report.' },
+      { report_id: 'DEMO-3', reporter: 'demo@bikepatrol.test', bike_id: 'BK-311', issue_type: 'faulty', description: 'Front brake looks damaged.', location_address: 'Bedok Mall, Singapore 469536', location_lat: 1.3246, location_lng: 103.9302, status: 'pending', ai_summary: 'Demo hotspot report.' },
+      { report_id: 'DEMO-4', reporter: 'demo@bikepatrol.test', bike_id: 'BK-312', issue_type: 'toppled', description: 'Bike is blocking the walkway.', location_address: 'Bedok Mall, Singapore 469536', location_lat: 1.3249, location_lng: 103.9306, status: 'completed', ai_summary: 'Demo hotspot report.' },
+      { report_id: 'DEMO-5', reporter: 'demo@bikepatrol.test', bike_id: 'BK-411', issue_type: 'illegal_parking', description: 'Bike left near station entrance.', location_address: 'Punggol MRT, Singapore 828761', location_lat: 1.4052, location_lng: 103.9023, status: 'pending', ai_summary: 'Demo hotspot report.' },
+      { report_id: 'DEMO-6', reporter: 'demo@bikepatrol.test', bike_id: 'BK-412', issue_type: 'illegal_parking', description: 'Crowded row outside parking box.', location_address: 'Punggol MRT, Singapore 828761', location_lat: 1.4056, location_lng: 103.9018, status: 'pending', ai_summary: 'Demo hotspot report.' },
+      { report_id: 'DEMO-7', reporter: 'demo@bikepatrol.test', bike_id: 'BK-511', issue_type: 'faulty', description: 'Wheel frame bent.', location_address: 'Jurong East Interchange, Singapore 609732', location_lat: 1.3333, location_lng: 103.7422, status: 'pending', ai_summary: 'Demo hotspot report.' },
+      { report_id: 'DEMO-8', reporter: 'demo@bikepatrol.test', bike_id: 'BK-611', issue_type: 'illegal_parking', description: 'Bike row spilling into walkway.', location_address: 'Woodlands Civic Centre, Singapore 738099', location_lat: 1.4362, location_lng: 103.7862, status: 'completed', ai_summary: 'Demo hotspot report.' },
+      { report_id: 'DEMO-9', reporter: 'demo@bikepatrol.test', bike_id: 'BK-612', issue_type: 'illegal_parking', description: 'Parked at curb ramp.', location_address: 'Woodlands Civic Centre, Singapore 738099', location_lat: 1.4366, location_lng: 103.7866, status: 'pending', ai_summary: 'Demo hotspot report.' },
+      { report_id: 'DEMO-10', reporter: 'demo@bikepatrol.test', bike_id: 'BK-711', issue_type: 'toppled', description: 'Toppled bike near beach access.', location_address: 'Pasir Ris Central, Singapore 519599', location_lat: 1.3731, location_lng: 103.9498, status: 'completed', ai_summary: 'Demo hotspot report.' },
+    ];
     const tutorialSteps = [
       {
         title: 'Dashboard overview',
@@ -1106,8 +1410,10 @@
       const staffReportsSection = document.getElementById('staff-reports-section');
       const reportsTitle = document.getElementById('reports-section-title');
       const rewardsNav = document.querySelector('.nav-item[data-tab="rewards"]');
+      const controlCenterNav = document.querySelector('.nav-item[data-tab="control-center"]');
       const rewardsTab = document.getElementById('rewards');
       const reportsTab = document.getElementById('reports');
+      const controlCenterTab = document.getElementById('control-center');
       const adminAccountCard = document.getElementById('admin-account-card');
       const dashboardButton = document.getElementById('dashboard-report-cta');
 
@@ -1135,6 +1441,12 @@
       if (reportsTab) {
         reportsTab.classList.toggle('hidden', adminMode);
       }
+      if (controlCenterNav) {
+        controlCenterNav.classList.toggle('hidden', !adminMode);
+      }
+      if (controlCenterTab) {
+        controlCenterTab.classList.toggle('hidden', !adminMode);
+      }
       if (adminAccountCard) {
         adminAccountCard.classList.toggle('hidden', !adminMode);
       }
@@ -1150,14 +1462,20 @@
         loadAdminAccounts();
       } else if (maintenanceMode) {
         const activeTab = document.querySelector('.tab-content.active');
-        if (activeTab && activeTab.id === 'rewards') {
+        if (activeTab && (activeTab.id === 'rewards' || activeTab.id === 'control-center')) {
           activateTab('reports');
+        }
+      } else {
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab && activeTab.id === 'control-center') {
+          activateTab('dashboard');
         }
       }
 
       if (staffMode) {
         loadStaffReports();
       }
+      loadDashboardCommunityData();
     }
 
     function setAvatar(element, photo, displayName) {
@@ -1260,12 +1578,8 @@
     // Tab Navigation
     document.querySelectorAll('.nav-item').forEach(item => {
       item.addEventListener('click', (e) => {
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        
-        e.target.closest('.nav-item').classList.add('active');
         const tabName = e.target.closest('.nav-item').dataset.tab;
-        document.getElementById(tabName)?.classList.add('active');
+        activateTab(tabName);
       });
     });
 
@@ -1283,6 +1597,19 @@
     function formatIssueLabel(issueType) {
       if (!issueType) return 'General';
       return issueType.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
+    function buildAiReviewCopy(report) {
+      if (!report?.ai_summary) {
+        return 'Pending review';
+      }
+      if (report.ai_alignment_status === 'issue_mismatch' && report.ai_detected_issue && report.ai_detected_issue !== report.issue_type) {
+        return `${report.ai_summary} Suggested issue: ${formatIssueLabel(report.ai_detected_issue)}.`;
+      }
+      if (report.ai_alignment_status === 'not_aligned') {
+        return `${report.ai_summary} Possible false submission.`;
+      }
+      return report.ai_summary;
     }
 
     function getIssueWeight(issueType) {
@@ -1319,6 +1646,24 @@
 
     function getPrimaryHotspot(hotspots) {
       return hotspots.length ? hotspots[0] : null;
+    }
+
+    function getAreaKey(report) {
+      if (!Number.isFinite(report.location_lat) || !Number.isFinite(report.location_lng)) return null;
+      return `${Number(report.location_lat).toFixed(2)}:${Number(report.location_lng).toFixed(2)}`;
+    }
+
+    function buildDashboardDisplayReports(reports) {
+      const mappedReports = reports.filter((report) =>
+        Number.isFinite(report.location_lat) && Number.isFinite(report.location_lng)
+      );
+      const uniqueAreas = new Set(mappedReports.map(getAreaKey).filter(Boolean));
+      if (mappedReports.length >= 6 && uniqueAreas.size >= 3) {
+        return reports;
+      }
+      const existingIds = new Set(reports.map((report) => report.report_id));
+      const demoReports = DEMO_HOTSPOT_REPORTS.filter((report) => !existingIds.has(report.report_id));
+      return [...reports, ...demoReports];
     }
 
     function getSeverityColor(severity) {
@@ -1435,6 +1780,22 @@
         currentHotspots,
         mappedReportsCount,
       );
+    }
+
+    function clearSelectedHotspotIfHidden(mappedReportsCount) {
+      if (!hotspotLeafletMap || !selectedHotspotId) return;
+      const selectedHotspot = currentHotspots.find((hotspot) => hotspot.id === selectedHotspotId);
+      if (!selectedHotspot) return;
+
+      const isVisible = hotspotLeafletMap.getBounds().contains([selectedHotspot.lat, selectedHotspot.lng]);
+      if (isVisible) return;
+
+      selectedHotspotId = null;
+      renderHotspotList(currentHotspots);
+      const detailCard = document.querySelector('#hotspot-map .hotspot-map-detail');
+      if (detailCard) {
+        detailCard.remove();
+      }
     }
 
     function buildHotspots(reports) {
@@ -1597,6 +1958,10 @@
           hotspotLeafletMap.fitBounds(bounds, { padding: [72, 72] });
         }
 
+        hotspotLeafletMap.on('moveend zoomend', () => {
+          clearSelectedHotspotIfHidden(mappedReportsCount);
+        });
+
         window.setTimeout(() => hotspotLeafletMap?.invalidateSize(), 0);
       } catch {
         const shell = map.querySelector('.hotspot-map-shell');
@@ -1659,6 +2024,388 @@
       });
     }
 
+    function renderParkingGuidance(guidance, targetId = 'parking-guidance-card') {
+      const card = document.getElementById(targetId);
+      if (!card) return;
+      if (!guidance) {
+        card.innerHTML = '<div class="hotspot-empty compact">Guidance will appear after ride or parking activity.</div>';
+        return;
+      }
+      card.innerHTML = `
+        <article class="parking-guidance-zone parking-guidance-zone-${guidance.zone || 'good'}">
+          <div class="parking-guidance-head">
+            <span class="parking-guidance-pill">${String(guidance.zone || 'good').toUpperCase()}</span>
+            <strong>${guidance.headline || 'Parking guidance'}</strong>
+          </div>
+          <p>${guidance.message || ''}</p>
+          <span>${guidance.points_tip || ''}</span>
+        </article>
+      `;
+    }
+
+    function renderRecoveryStatus(recoveryStatus) {
+      const card = document.getElementById('recovery-status-card');
+      if (!card) return;
+      if (!recoveryStatus) {
+        card.innerHTML = '<div class="hotspot-empty compact">Recovery guidance will appear here.</div>';
+        return;
+      }
+      card.innerHTML = `
+        <article class="recovery-status-box ${recoveryStatus.has_recent_incident ? 'incident' : 'positive'}">
+          <strong>${recoveryStatus.headline}</strong>
+          <p>${recoveryStatus.message}</p>
+        </article>
+      `;
+    }
+
+    function renderBeforeYouLeaveWarning(guidance) {
+      const panel = document.getElementById('before-you-leave-warning');
+      if (!panel) return;
+      if (!guidance || guidance.zone === 'good') {
+        panel.innerHTML = '<div class="hotspot-empty compact">A parking warning will appear here when you log a parking event in a risky area.</div>';
+        return;
+      }
+      panel.innerHTML = `
+        <article class="before-warning-card before-warning-card-${guidance.zone}">
+          <strong>Before you leave</strong>
+          <p>${guidance.message}</p>
+        </article>
+      `;
+    }
+
+    function renderLeaderboard(listId, leaders) {
+      const node = document.getElementById(listId);
+      if (!node) return;
+      if (!leaders?.length) {
+        node.innerHTML = '<div class="hotspot-empty compact">Leaderboard data will appear here.</div>';
+        return;
+      }
+      node.innerHTML = leaders.map((leader, index) => `
+        <article class="leaderboard-item">
+          <div class="leaderboard-rank">${index + 1}</div>
+          <div class="leaderboard-copy">
+            <strong>${leader.display_name}</strong>
+            <span>${leader.correction_missions_completed || 0} corrective missions • ${leader.good_action_streak || 0} streak</span>
+          </div>
+          <div class="leaderboard-score">${leader.score}</div>
+        </article>
+      `).join('');
+    }
+
+    function getLeaderboardTier(score) {
+      if (score >= 780) return { name: 'Master Keeper', accent: 'master' };
+      if (score >= 560) return { name: 'Diamond Guardian', accent: 'diamond' };
+      if (score >= 360) return { name: 'Gold Sentinel', accent: 'gold' };
+      if (score >= 180) return { name: 'Silver Rider', accent: 'silver' };
+      return { name: 'Rookie Keeper', accent: 'rookie' };
+    }
+
+    function getLeaderboardTiers() {
+      return [
+        { name: 'Master Keeper', accent: 'master', minScore: 780 },
+        { name: 'Diamond Guardian', accent: 'diamond', minScore: 560 },
+        { name: 'Gold Sentinel', accent: 'gold', minScore: 360 },
+        { name: 'Silver Rider', accent: 'silver', minScore: 180 },
+        { name: 'Rookie Keeper', accent: 'rookie', minScore: 0 },
+      ];
+    }
+
+    function openLeaderboardRankModal() {
+      document.getElementById('leaderboard-rank-modal')?.classList.remove('hidden');
+    }
+
+    function closeLeaderboardRankModal() {
+      document.getElementById('leaderboard-rank-modal')?.classList.add('hidden');
+    }
+
+    function renderLeaderboardRankLadder(leaders = []) {
+      const summary = document.getElementById('leaderboard-rank-summary');
+      const list = document.getElementById('leaderboard-rank-list');
+      if (!summary || !list) return;
+
+      const currentLeader = currentSession?.user
+        ? leaders.find((leader) => String(leader.user).toLowerCase() === String(currentSession.user).toLowerCase())
+        : null;
+      const player = currentLeader || null;
+      const playerScore = player?.score || 0;
+      const currentTier = getLeaderboardTier(playerScore);
+      const tiers = getLeaderboardTiers();
+      const nextTier = [...tiers].reverse().find((tier) => tier.minScore > playerScore) || null;
+      const pointsNeeded = nextTier ? nextTier.minScore - playerScore : 0;
+
+      summary.innerHTML = player
+        ? `
+          <article class="leaderboard-rank-summary-card ${currentTier.accent}">
+            <span class="leaderboard-rank-summary-pill">${currentTier.name}</span>
+            <strong>${player.display_name}</strong>
+            <div class="leaderboard-rank-summary-score">${playerScore}</div>
+            <p>${nextTier ? `${pointsNeeded} more points to reach ${nextTier.name}.` : 'You are already at the top rank.'}</p>
+          </article>
+        `
+        : `
+          <article class="leaderboard-rank-summary-card rookie">
+            <span class="leaderboard-rank-summary-pill">Guest view</span>
+            <strong>Leaderboard ladder</strong>
+            <div class="leaderboard-rank-summary-score">0</div>
+            <p>Log in to track your own climb through the season ranks.</p>
+          </article>
+        `;
+
+      list.innerHTML = tiers.map((tier, index) => {
+        const nextLowerThreshold = tiers[index + 1]?.minScore ?? 0;
+        const isCurrent = currentTier.name === tier.name;
+        const reached = playerScore >= tier.minScore;
+        return `
+          <article class="leaderboard-rank-tier-card ${tier.accent} ${isCurrent ? 'current' : ''} ${reached ? 'reached' : ''}">
+            <div class="leaderboard-rank-tier-head">
+              <strong>${tier.name}</strong>
+              <span>${tier.minScore}+ pts</span>
+            </div>
+            <p>${tier.minScore === 0 ? 'Entry rank for new players beginning their climb.' : `Reach at least ${tier.minScore} points to unlock this rank.`}</p>
+            <div class="leaderboard-rank-tier-meta">
+              <span>${isCurrent ? 'Current rank' : reached ? 'Unlocked' : `${Math.max(tier.minScore - playerScore, 0)} pts needed`}</span>
+              <span>${tier.minScore - nextLowerThreshold || tier.minScore} point tier span</span>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function renderLeaderboardArena(leaders = []) {
+      const podium = document.getElementById('leaderboard-podium');
+      const table = document.getElementById('leaderboard-table');
+      const playerCard = document.getElementById('leaderboard-player-card');
+      const rivalries = document.getElementById('leaderboard-rivalries');
+      const tierName = document.getElementById('leaderboard-tier-name');
+      if (!podium || !table || !playerCard || !rivalries || !tierName) return;
+
+      if (!leaders.length) {
+        podium.innerHTML = '<div class="impact-empty">Podium standings will appear here.</div>';
+        table.innerHTML = '<div class="impact-empty">Leaderboard standings will appear here.</div>';
+        playerCard.innerHTML = '<div class="impact-empty">Log in to load your player card.</div>';
+        rivalries.innerHTML = '<div class="impact-empty">Rivalry cards will appear here.</div>';
+        tierName.textContent = 'Rookie Keeper';
+        renderLeaderboardRankLadder([]);
+        return;
+      }
+
+      const topThree = leaders.slice(0, 3);
+      podium.innerHTML = topThree.map((leader, index) => `
+        <article class="podium-card podium-card-${index + 1}">
+          <span class="podium-place">#${index + 1}</span>
+          <strong>${leader.display_name}</strong>
+          <span>${leader.correction_missions_completed || 0} rescue missions</span>
+          <div class="podium-score">${leader.score}</div>
+        </article>
+      `).join('');
+
+      table.innerHTML = leaders.map((leader, index) => {
+        const tier = getLeaderboardTier(leader.score || 0);
+        return `
+          <article class="leaderboard-row-card ${tier.accent}">
+            <div class="leaderboard-row-rank">#${index + 1}</div>
+            <div class="leaderboard-row-copy">
+              <strong>${leader.display_name}</strong>
+              <span>${tier.name} • ${leader.good_action_streak || 0} streak • ${leader.correction_missions_completed || 0} rescue missions</span>
+            </div>
+            <div class="leaderboard-row-meta">
+              <span>${leader.correction_missions_completed || 0} missions</span>
+              <strong>${leader.score}</strong>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      const currentLeader = currentSession?.user
+        ? leaders.find((leader) => String(leader.user).toLowerCase() === String(currentSession.user).toLowerCase())
+        : null;
+      const player = currentLeader || leaders[0];
+      const playerTier = getLeaderboardTier(player.score || 0);
+      tierName.textContent = playerTier.name;
+      playerCard.innerHTML = `
+        <article class="player-rank-card ${playerTier.accent}">
+          <span class="player-rank-tier">${playerTier.name}</span>
+          <strong>${player.display_name}</strong>
+          <div class="player-rank-score">${player.score}</div>
+          <div class="player-rank-stats">
+            <span>${player.correction_missions_completed || 0} corrective missions</span>
+            <span>${player.good_action_streak || 0} streak pressure</span>
+            <span>${player.help_events || 0} helpful actions logged</span>
+          </div>
+        </article>
+      `;
+
+      const rivalryPairs = leaders.slice(0, 5).filter((leader, index, arr) => arr[index + 1]).slice(0, 3);
+      rivalries.innerHTML = rivalryPairs.map((leader, index) => {
+        const challenger = leaders[index + 1];
+        const gap = Math.abs((leader.score || 0) - (challenger.score || 0));
+        return `
+          <article class="rivalry-card">
+            <strong>${leader.display_name} vs ${challenger.display_name}</strong>
+            <span>${gap} points apart • ${leader.correction_missions_completed || 0}/${challenger.correction_missions_completed || 0} missions</span>
+          </article>
+        `;
+      }).join('');
+
+      renderLeaderboardRankLadder(leaders);
+    }
+
+    function renderMissionList(missions, targetId = 'mission-panel-content', forWallet = false) {
+      const node = document.getElementById(targetId);
+      if (!node) return;
+      if (!missions?.length) {
+        node.innerHTML = forWallet
+          ? '<div class="hotspot-empty compact">No active corrective missions right now. Check back after more hotspot reports arrive.</div>'
+          : '<div class="impact-empty">No active corrective missions right now.</div>';
+        return;
+      }
+
+      const markup = missions.map((mission) => `
+        <article class="mission-card ${mission.severity}">
+          <div class="mission-card-head">
+            <span class="mission-chip">${mission.headline}</span>
+            <strong>+${mission.reward_points + mission.bonus_points} pts</strong>
+          </div>
+          <h3>${mission.title}</h3>
+          <p>${mission.encouragement}</p>
+          <div class="mission-meta-row">
+            <span>${mission.location_title}</span>
+            <span>${mission.bike_ids?.length ? `Try ${mission.bike_ids.join(', ')}` : 'Bike IDs load from reports'}</span>
+          </div>
+          ${mission.recovery_boost ? `<div class="mission-boost">Recovery boost active: +${mission.recovery_boost} bonus pts</div>` : ''}
+        </article>
+      `).join('');
+
+      if (forWallet) {
+        node.innerHTML = markup;
+        return;
+      }
+
+      node.innerHTML = `
+        <div class="mission-card-list">
+          ${markup}
+        </div>
+      `;
+    }
+
+    function renderHotspotAlert(alert) {
+      const node = document.getElementById('hotspot-alert-content');
+      if (!node) return;
+      if (!alert?.active) {
+        node.innerHTML = '<div class="impact-empty">No major congestion hotspot right now.</div>';
+        return;
+      }
+      node.innerHTML = `
+        <article class="alert-card ${alert.severity || 'low'}">
+          <span class="alert-pill">${String(alert.severity || 'watch').toUpperCase()} ALERT</span>
+          <strong>${alert.title}</strong>
+          <p>${alert.message}</p>
+        </article>
+      `;
+    }
+
+    function renderSpaceImpact(spaceMetrics, communityImpact) {
+      const node = document.getElementById('space-impact-content');
+      if (!node) return;
+      if (!spaceMetrics) {
+        node.innerHTML = '<div class="impact-empty">Space recovery metrics will appear here.</div>';
+        return;
+      }
+      node.innerHTML = `
+        <div class="impact-metrics-grid">
+          <article class="impact-metric-card">
+            <span>Bikes re-parked</span>
+            <strong>${spaceMetrics.bikes_reparked || 0}</strong>
+          </article>
+          <article class="impact-metric-card">
+            <span>Space recovered</span>
+            <strong>${Number(spaceMetrics.space_recovered_m2 || 0).toFixed(1)} m²</strong>
+          </article>
+          <article class="impact-metric-card">
+            <span>Blocked space cleared</span>
+            <strong>${Number(spaceMetrics.blocked_space_cleared_estimate || 0).toFixed(1)} m²</strong>
+          </article>
+          <article class="impact-metric-card">
+            <span>Your helpful saves</span>
+            <strong>${Number(communityImpact?.space_recovered_estimate || 0).toFixed(1)} m²</strong>
+          </article>
+        </div>
+      `;
+    }
+
+    function renderPriorityRouting(routes) {
+      const node = document.getElementById('routing-panel-content');
+      if (!node) return;
+      if (!routes?.length) {
+        node.innerHTML = '<div class="impact-empty">Staff routing guidance will appear here.</div>';
+        return;
+      }
+      node.innerHTML = routes.map((route, index) => `
+        <article class="route-card">
+          <div class="route-card-head">
+            <span>#${index + 1}</span>
+            <strong>${route.priority_score}</strong>
+          </div>
+          <h3>${route.title}</h3>
+          <p>${route.recommended_action}</p>
+          <div class="mission-meta-row">
+            <span>${route.estimated_bikes} bikes involved</span>
+            <span>${route.public_space_impact} impact score</span>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function renderDashboardCommunityData(data) {
+      renderHotspotAlert(data?.hotspot_alert);
+      renderSpaceImpact(data?.space_metrics, data?.community_impact);
+      renderMissionList(data?.missions || [], 'mission-panel-content', false);
+      renderPriorityRouting(data?.priority_routes || []);
+      renderLeaderboardArena(data?.leaderboard || []);
+    }
+
+    async function loadDashboardCommunityData() {
+      const routingPanel = document.getElementById('routing-panel');
+      if (routingPanel) {
+        routingPanel.classList.toggle('hidden', !isStaffRole(currentSession?.role));
+      }
+
+      if (!currentSession?.user) {
+        renderHotspotAlert(null);
+        renderSpaceImpact(null, null);
+        renderMissionList([], 'mission-panel-content', false);
+        renderLeaderboardArena([]);
+        renderPriorityRouting([]);
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/rewards/${encodeURIComponent(currentSession.user)}`);
+        const data = await res.json();
+        if (!res.ok) {
+          renderHotspotAlert(null);
+          return;
+        }
+        renderDashboardCommunityData(data);
+      } catch {
+        renderHotspotAlert(null);
+        renderLeaderboardArena([]);
+      }
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) {
+          resolve(null);
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Unable to read image file.'));
+        reader.readAsDataURL(file);
+      });
+    }
+
     function updateDashboardMetrics(reports, pendingReports, completedReports, hotspots, mappedReportsCount) {
       const totalReports = reports.length;
       const topHotspot = getPrimaryHotspot(hotspots);
@@ -1702,9 +2449,10 @@
         const reports = data.all_reports || data.recent_reports || [];
         const pendingReports = data.pending_reports || reports.filter((report) => report.status !== 'completed');
         const completedReports = data.completed_reports || reports.filter((report) => report.status === 'completed');
-        const hotspots = buildHotspots(reports);
+        const dashboardReports = buildDashboardDisplayReports(reports);
+        const hotspots = buildHotspots(dashboardReports);
         currentHotspots = hotspots;
-        const mappedReportsCount = reports.filter((report) =>
+        const mappedReportsCount = dashboardReports.filter((report) =>
           Number.isFinite(report.location_lat) && Number.isFinite(report.location_lng)
         ).length;
         currentMappedReportsCount = mappedReportsCount;
@@ -1712,6 +2460,7 @@
         updateDashboardMetrics(reports, pendingReports, completedReports, hotspots, mappedReportsCount);
         renderHotspotMap(hotspots, mappedReportsCount);
         renderHotspotList(hotspots);
+        loadDashboardCommunityData();
       } catch {
         if (map) {
           map.innerHTML = '<div class="hotspot-empty">Unable to load hotspot data right now.</div>';
@@ -1742,44 +2491,151 @@
       document.getElementById('tutorial-modal')?.classList.add('hidden');
     }
 
-    async function loadAdminAccounts() {
-      const card = document.getElementById('admin-account-card');
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function renderAdminOverview(overview) {
+      const container = document.getElementById('admin-account-overview');
+      if (!container) return;
+      if (!overview) {
+        container.innerHTML = '<div class="impact-empty">Admin overview metrics will appear here.</div>';
+        return;
+      }
+
+      const topContributor = overview.top_contributor
+        ? `${escapeHtml(overview.top_contributor.display_name || overview.top_contributor.user)} · ${Number(overview.top_contributor.points_balance || 0)} pts`
+        : 'No leaderboard signal yet';
+
+      container.innerHTML = `
+        <article class="admin-overview-card">
+          <span>Total accounts</span>
+          <strong>${Number(overview.total_accounts || 0)}</strong>
+        </article>
+        <article class="admin-overview-card">
+          <span>User accounts</span>
+          <strong>${Number(overview.user_accounts || 0)}</strong>
+        </article>
+        <article class="admin-overview-card">
+          <span>Maintenance</span>
+          <strong>${Number(overview.maintenance_accounts || 0)}</strong>
+        </article>
+        <article class="admin-overview-card">
+          <span>Pending reports</span>
+          <strong>${Number(overview.pending_reports || 0)}</strong>
+        </article>
+        <article class="admin-overview-card">
+          <span>Needs attention</span>
+          <strong>${Number(overview.accounts_needing_attention || 0)}</strong>
+        </article>
+        <article class="admin-overview-card">
+          <span>Top contributor</span>
+          <strong style="font-size:18px; line-height:1.25;">${topContributor}</strong>
+        </article>
+      `;
+    }
+
+    function buildAdminAccountNarrative(account) {
+      const notes = [];
+      if (account.needs_attention) {
+        if (Number(account.false_submission_offenses || 0) > 0) {
+          notes.push(`${account.false_submission_offenses} false-submission offense${Number(account.false_submission_offenses || 0) === 1 ? '' : 's'} on record.`);
+        }
+        if (Number(account.parking_incident_count || 0) > 0) {
+          notes.push(`${account.parking_incident_count} parking incident${Number(account.parking_incident_count || 0) === 1 ? '' : 's'} need follow-up.`);
+        }
+        if (account.active_bike_id) {
+          notes.push(`Currently linked to bike ${account.active_bike_id}.`);
+        }
+      } else {
+        notes.push('Healthy account with no active risk flags.');
+      }
+      if (account.last_report_issue) {
+        notes.push(`Latest report theme: ${String(account.last_report_issue).replaceAll('_', ' ')}.`);
+      }
+      return notes.join(' ');
+    }
+
+    function renderAdminAccountsList() {
       const list = document.getElementById('admin-account-list');
-      const status = document.getElementById('admin-account-status');
-      if (!card || !list || !currentSession?.token || currentSession.role !== 'admin') {
-        return;
+      const searchValue = (document.getElementById('admin-account-search')?.value || '').trim().toLowerCase();
+      if (!list) return;
+
+      let accounts = [...adminAccountsCache].filter((account) => account.role !== 'admin');
+      if (adminAccountFilter === 'user' || adminAccountFilter === 'maintenance') {
+        accounts = accounts.filter((account) => account.role === adminAccountFilter);
+      } else if (adminAccountFilter === 'attention') {
+        accounts = accounts.filter((account) => account.needs_attention);
       }
 
-      status.innerHTML = '';
-      list.innerHTML = '<div class="hotspot-empty compact">Loading accounts...</div>';
-
-      const res = await fetch(`${API_BASE}/api/admin/accounts`, {
-        headers: authHeaders(),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        list.innerHTML = `<div class="hotspot-empty compact">${data.detail || 'Unable to load admin accounts.'}</div>`;
-        return;
+      if (searchValue) {
+        accounts = accounts.filter((account) =>
+          String(account.user || '').toLowerCase().includes(searchValue)
+          || String(account.display_name || '').toLowerCase().includes(searchValue)
+          || String(account.role || '').toLowerCase().includes(searchValue)
+        );
       }
 
-      const accounts = (data.accounts || []).filter((account) => account.role !== 'admin');
       if (!accounts.length) {
-        list.innerHTML = '<div class="hotspot-empty compact">No maintenance or user accounts to manage yet.</div>';
+        list.innerHTML = '<div class="hotspot-empty compact">No accounts match the current filters.</div>';
         return;
       }
 
       list.innerHTML = accounts.map((account) => `
-        <article class="admin-account-item" data-user="${account.user}">
+        <article class="admin-account-item ${account.needs_attention ? 'attention' : ''}" data-user="${escapeHtml(account.user)}">
           <div class="admin-account-header">
-            <div>
-              <strong>${account.display_name || account.user}</strong>
-              <span>${account.user}</span>
+            <div class="admin-account-title-group">
+              <span class="admin-account-eyebrow">${escapeHtml(account.role)} account</span>
+              <div class="admin-account-title">
+                <strong>${escapeHtml(account.display_name || account.user)}</strong>
+                ${account.needs_attention ? '<span class="admin-meta-pill attention">Needs attention</span>' : '<span class="admin-meta-pill">Stable</span>'}
+              </div>
+              <span class="admin-account-subtitle">${escapeHtml(account.user)}${account.phone_number ? ` · ${escapeHtml(account.phone_number)}` : ''}</span>
             </div>
-            <span class="hotspot-pill hotspot-pill-${account.role === 'maintenance' ? 'medium' : 'low'}">${account.role}</span>
+            <span class="hotspot-pill hotspot-pill-${account.role === 'maintenance' ? 'medium' : 'low'}">${escapeHtml(account.role)}</span>
           </div>
-          <div class="admin-streak-row">
-            <span>Current streak: <strong>${account.good_action_streak || 0}</strong></span>
-            <span>Multiplier: <strong>${Number(account.streak_multiplier || 1).toFixed(2)}x</strong></span>
+          <div class="admin-meta-strip">
+            <span class="admin-meta-pill">Balance ${Number(account.points_balance || 0)} pts</span>
+            <span class="admin-meta-pill">Lifetime ${Number(account.lifetime_points || 0)} pts</span>
+            <span class="admin-meta-pill">Streak ${Number(account.good_action_streak || 0)}</span>
+            <span class="admin-meta-pill">Multiplier ${Number(account.streak_multiplier || 1).toFixed(2)}x</span>
+            <span class="admin-meta-pill ${Number(account.false_submission_offenses || 0) > 0 || Number(account.parking_incident_count || 0) > 0 ? 'attention' : ''}">
+              Risk ${Number(account.false_submission_offenses || 0) + Number(account.parking_incident_count || 0)}
+            </span>
+          </div>
+          <div class="admin-account-stats">
+            <div class="admin-account-stat">
+              <small>Helpful actions</small>
+              <strong>${Number(account.helpful_actions || 0)}</strong>
+            </div>
+            <div class="admin-account-stat">
+              <small>Correction missions</small>
+              <strong>${Number(account.correction_missions_completed || 0)}</strong>
+            </div>
+            <div class="admin-account-stat">
+              <small>False submissions</small>
+              <strong>${Number(account.false_submission_offenses || 0)}</strong>
+            </div>
+            <div class="admin-account-stat">
+              <small>Parking incidents</small>
+              <strong>${Number(account.parking_incident_count || 0)}</strong>
+            </div>
+            <div class="admin-account-stat">
+              <small>Recent reports</small>
+              <strong>${Number(account.recent_report_count || 0)}</strong>
+            </div>
+            <div class="admin-account-stat">
+              <small>Active bike</small>
+              <strong>${escapeHtml(account.active_bike_id || 'None')}</strong>
+            </div>
+          </div>
+          <div class="admin-account-summary">
+            <p>${escapeHtml(buildAdminAccountNarrative(account))}</p>
           </div>
           <div class="admin-account-controls">
             <label>
@@ -1791,12 +2647,20 @@
             </label>
             <label>
               <span>Display name</span>
-              <input type="text" class="admin-display-name-input" value="${account.display_name || ''}" placeholder="Display name" />
+              <input type="text" class="admin-display-name-input" value="${escapeHtml(account.display_name || '')}" placeholder="Display name" />
+            </label>
+            <label>
+              <span>Phone number</span>
+              <input type="text" class="admin-phone-number-input" value="${escapeHtml(account.phone_number || '')}" placeholder="Phone number" />
             </label>
             <label>
               <span>Reset password</span>
               <input type="text" class="admin-password-input" placeholder="Leave blank to keep current password" />
             </label>
+          </div>
+          <div class="admin-streak-row">
+            <span>Last issue theme: <strong>${escapeHtml(account.last_report_issue ? String(account.last_report_issue).replaceAll('_', ' ') : 'No report history')}</strong></span>
+            <span class="admin-account-note">Use streak reset when illegal parking or repeated misuse needs a soft intervention.</span>
           </div>
           <div class="admin-account-actions">
             <button type="button" class="btn-primary admin-save-account-btn">Save changes</button>
@@ -1806,6 +2670,62 @@
       `).join('');
     }
 
+    async function loadAdminAccounts() {
+      const card = document.getElementById('admin-account-card');
+      const list = document.getElementById('admin-account-list');
+      const status = document.getElementById('admin-account-status');
+      if (!card || !list || !currentSession?.token || currentSession.role !== 'admin') {
+        return;
+      }
+
+      status.innerHTML = '';
+      list.innerHTML = '<div class="hotspot-empty compact">Loading accounts...</div>';
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/accounts`, {
+          headers: authHeaders(),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          list.innerHTML = `<div class="hotspot-empty compact">${data.detail || 'Unable to load admin accounts.'}</div>`;
+          return;
+        }
+
+        adminAccountsCache = data.accounts || [];
+        adminOverviewCache = data.overview || null;
+        renderAdminOverview(adminOverviewCache);
+        renderAdminAccountsList();
+      } catch {
+        list.innerHTML = '<div class="hotspot-empty compact">Unable to load admin accounts.</div>';
+      }
+    }
+
+    async function createAdminAccount() {
+      const status = document.getElementById('admin-account-status');
+      const email = document.getElementById('admin-create-email')?.value.trim() || '';
+      const displayName = document.getElementById('admin-create-display-name')?.value.trim() || '';
+      const phoneNumber = document.getElementById('admin-create-phone-number')?.value.trim() || '';
+      const role = document.getElementById('admin-create-role')?.value || 'user';
+      const password = document.getElementById('admin-create-password')?.value || '';
+
+      const res = await fetch(`${API_BASE}/api/admin/accounts/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({
+          user: email,
+          display_name: displayName,
+          phone_number: phoneNumber,
+          role,
+          password,
+        }),
+      });
+      const data = await res.json();
+      status.innerHTML = res.ok ? `<strong>✓ ${data.message}</strong>` : `<strong>⚠ ${data.detail || 'Unable to create account.'}</strong>`;
+      if (res.ok) {
+        document.getElementById('admin-create-form')?.reset();
+        await loadAdminAccounts();
+      }
+    }
+
     async function saveAdminAccount(button) {
       const card = button.closest('.admin-account-item');
       if (!card || !currentSession?.token) return;
@@ -1813,12 +2733,14 @@
       const user = card.dataset.user;
       const role = card.querySelector('.admin-role-select')?.value;
       const displayName = card.querySelector('.admin-display-name-input')?.value.trim() || '';
+      const phoneNumber = card.querySelector('.admin-phone-number-input')?.value.trim() || '';
       const password = card.querySelector('.admin-password-input')?.value || '';
       const status = document.getElementById('admin-account-status');
 
       const payload = {
         role,
         display_name: displayName,
+        phone_number: phoneNumber,
       };
       if (password.trim()) {
         payload.password = password;
@@ -1892,7 +2814,8 @@
             <div><strong>Issue:</strong> ${report.issue_type.replace('_', ' ')}</div>
             <div><strong>Description:</strong> ${report.description}</div>
             <div><strong>Location:</strong> ${reportedLocation}</div>
-            <div><strong>AI review:</strong> ${report.ai_summary || 'Pending review'}</div>
+            <div><strong>AI review:</strong> ${buildAiReviewCopy(report)}</div>
+            ${report.ai_detected_issue && report.ai_detected_issue !== report.issue_type ? `<div><strong>Suggested issue:</strong> ${formatIssueLabel(report.ai_detected_issue)}</div>` : ''}
             <div><strong>Status:</strong> ${report.status || 'pending'}</div>
             ${report.review_action ? `<div><strong>Decision:</strong> ${report.review_action}</div>` : ''}
             ${report.reviewed_by ? `<div><strong>Reviewed by:</strong> ${report.reviewed_by}</div>` : ''}
@@ -1970,7 +2893,7 @@
           <td><span class="badge">${r.issue_type.replace('_', ' ')}</span></td>
           <td>${r.description}</td>
           <td>${reportedLocation}</td>
-          <td>${r.ai_summary || 'Pending review'}</td>
+          <td>${buildAiReviewCopy(r)}</td>
           <td><span class="status-ok">●</span> ${reviewStatus}</td>
         </tr>
       `}).join('');
@@ -2083,7 +3006,9 @@
       const activeBikeId = document.getElementById('active-bike-id');
       const scanStatus = document.getElementById('scan-bike-status');
       const status = document.getElementById('points-wallet-status');
-      if (!balance || !lifetime || !nextReward || !activityCount || !streak || !multiplier || !storeGrid || !historyList || !historyCopy || !rideHistoryList || !parkingHistoryList || !parkingIncidentList || !activeBikeId || !scanStatus || !status) {
+      const missionList = document.getElementById('reward-mission-list');
+      const missionSelect = document.getElementById('mission-select');
+      if (!balance || !lifetime || !nextReward || !activityCount || !streak || !multiplier || !storeGrid || !historyList || !historyCopy || !rideHistoryList || !parkingHistoryList || !parkingIncidentList || !activeBikeId || !scanStatus || !status || !missionList || !missionSelect) {
         return;
       }
 
@@ -2103,6 +3028,12 @@
         activeBikeId.textContent = 'None linked';
         scanStatus.innerHTML = '';
         historyCopy.textContent = 'Your latest earnings and redemptions will appear here.';
+        missionList.innerHTML = '<div class="hotspot-empty compact">Log in to see corrective missions.</div>';
+        missionSelect.innerHTML = '<option value="">Select a mission</option>';
+        renderParkingGuidance(null);
+        renderRecoveryStatus(null);
+        renderBeforeYouLeaveWarning(null);
+        renderLeaderboard('reward-leaderboard-list', []);
         return;
       }
 
@@ -2126,6 +3057,7 @@
       const parkingHistory = data.parking_history || [];
       const parkingIncidents = data.parking_incidents || [];
       const linkedBikeId = data.active_bike_id || null;
+      const missions = data.missions || [];
 
       balance.textContent = String(pointsBalance);
       lifetime.textContent = String(lifetimePoints);
@@ -2136,6 +3068,12 @@
       nextReward.textContent = pointsToNextReward > 0
         ? `${pointsToNextReward} pts until your next reward item • ${pointsToNextStreak} good action${pointsToNextStreak === 1 ? '' : 's'} until your next multiplier`
         : `You can redeem now • ${pointsToNextStreak} good action${pointsToNextStreak === 1 ? '' : 's'} until your next multiplier`;
+      renderMissionList(missions, 'reward-mission-list', true);
+      missionSelect.innerHTML = `<option value="">Select a mission</option>${missions.map((mission) => `<option value="${mission.id}">${mission.title}</option>`).join('')}`;
+      renderParkingGuidance(data.parking_guidance);
+      renderRecoveryStatus(data.recovery_status);
+      renderLeaderboard('reward-leaderboard-list', data.leaderboard || []);
+      renderBeforeYouLeaveWarning(data.parking_guidance);
 
       storeGrid.innerHTML = catalog.map((reward) => `
         <article class="points-store-item">
@@ -2237,17 +3175,88 @@
         return;
       }
       const endpoint = kind === 'parking' ? 'parking/log' : 'rides/log';
+      let locationPayload = {};
+      try {
+        const reportLocation = await requestReportLocation();
+        locationPayload = {
+          location_lat: reportLocation.latitude,
+          location_lng: reportLocation.longitude,
+          location_accuracy: reportLocation.accuracy,
+          location_address: await resolveReportAddress(reportLocation),
+        };
+      } catch {
+        locationPayload = {};
+      }
       const res = await fetch(`${API_BASE}/api/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify({ bike_id: bikeId, notes: notesInput?.value.trim() || '' }),
+        body: JSON.stringify({ bike_id: bikeId, notes: notesInput?.value.trim() || '', ...locationPayload }),
       });
       const data = await res.json();
       status.innerHTML = res.ok ? `<strong>✓ ${data.message}</strong>` : `<strong>⚠ ${data.detail}</strong>`;
       if (res.ok) {
         if (bikeIdInput) bikeIdInput.value = '';
         if (notesInput) notesInput.value = '';
+        renderParkingGuidance(data.parking_guidance);
+        if (kind === 'parking') {
+          renderBeforeYouLeaveWarning(data.parking_guidance);
+        }
         loadRewardUsePanel();
+      }
+    }
+
+    async function completeMission() {
+      const status = document.getElementById('points-wallet-status');
+      if (!currentSession?.user) {
+        status.innerHTML = '<strong>⚠ Please log in to complete a mission.</strong>';
+        return;
+      }
+
+      const bikeId = document.getElementById('mission-bike-id')?.value.trim();
+      const missionId = document.getElementById('mission-select')?.value;
+      const notes = document.getElementById('mission-notes')?.value.trim() || '';
+      const beforeFile = document.getElementById('mission-before-image')?.files?.[0] || null;
+      const afterFile = document.getElementById('mission-after-image')?.files?.[0] || null;
+      if (!bikeId || !missionId) {
+        status.innerHTML = '<strong>⚠ Select a mission and bike ID first.</strong>';
+        return;
+      }
+
+      let locationPayload = {};
+      try {
+        const reportLocation = await requestReportLocation();
+        locationPayload = {
+          location_lat: reportLocation.latitude,
+          location_lng: reportLocation.longitude,
+          location_address: await resolveReportAddress(reportLocation),
+        };
+      } catch {
+        locationPayload = {};
+      }
+
+      const res = await fetch(`${API_BASE}/api/parking-help`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user: currentSession.user,
+          bike_id: bikeId,
+          mission_id: missionId,
+          notes: notes || 'Returned an illegally parked bike into a proper zone.',
+          before_image: await fileToDataUrl(beforeFile),
+          after_image: await fileToDataUrl(afterFile),
+          ...locationPayload,
+        }),
+      });
+      const data = await res.json();
+      status.innerHTML = res.ok ? `<strong>✓ ${data.message}</strong>` : `<strong>⚠ ${data.detail || 'Unable to complete mission.'}</strong>`;
+      if (res.ok) {
+        document.getElementById('mission-bike-id').value = '';
+        document.getElementById('mission-select').value = '';
+        document.getElementById('mission-notes').value = '';
+        document.getElementById('mission-before-image').value = '';
+        document.getElementById('mission-after-image').value = '';
+        loadRewardUsePanel();
+        loadDashboard();
       }
     }
 
@@ -2424,9 +3433,16 @@
         closePointsPromoModal();
       }
     });
+    document.getElementById('leaderboard-rank-modal')?.addEventListener('click', (event) => {
+      if (event.target.id === 'leaderboard-rank-modal') {
+        closeLeaderboardRankModal();
+      }
+    });
 
     document.getElementById('close-tutorial-modal')?.addEventListener('click', closeTutorialModal);
     document.getElementById('close-points-promo-modal')?.addEventListener('click', () => closePointsPromoModal());
+    document.getElementById('close-leaderboard-rank-modal')?.addEventListener('click', closeLeaderboardRankModal);
+    document.getElementById('leaderboard-rank-trigger')?.addEventListener('click', openLeaderboardRankModal);
     document.getElementById('dismiss-points-promo-btn')?.addEventListener('click', () => closePointsPromoModal());
     document.getElementById('open-points-wallet-btn')?.addEventListener('click', () => {
       closePointsPromoModal();
@@ -2643,8 +3659,7 @@
 
     document.getElementById('dashboard-report-cta')?.addEventListener('click', () => {
       if (currentSession?.role === 'admin') {
-        const adminCard = document.getElementById('admin-account-card');
-        adminCard?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        activateTab('control-center');
         return;
       }
       openTutorialModal();
@@ -2667,6 +3682,25 @@
       }
     });
 
+    document.getElementById('admin-create-form')?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      await createAdminAccount();
+    });
+
+    document.getElementById('admin-account-search')?.addEventListener('input', () => {
+      renderAdminAccountsList();
+    });
+
+    document.getElementById('admin-filter-chips')?.addEventListener('click', (event) => {
+      const chip = event.target.closest('.admin-filter-chip');
+      if (!chip) return;
+      adminAccountFilter = chip.dataset.filter || 'all';
+      document.querySelectorAll('.admin-filter-chip').forEach((button) => {
+        button.classList.toggle('active', button === chip);
+      });
+      renderAdminAccountsList();
+    });
+
     document.getElementById('points-store-grid')?.addEventListener('click', async (event) => {
       const button = event.target.closest('.redeem-points-btn');
       if (!button || button.disabled) return;
@@ -2683,6 +3717,10 @@
 
     document.getElementById('scan-bike-btn')?.addEventListener('click', async () => {
       await scanBikeQr();
+    });
+
+    document.getElementById('complete-mission-btn')?.addEventListener('click', async () => {
+      await completeMission();
     });
 
     // Initialize

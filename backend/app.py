@@ -48,6 +48,10 @@ class Report(BaseModel):
     faulty: Optional[bool] = Field(False, title="Bike appears faulty")
     image: Optional[str] = Field(None, title="Base64 encoded image data")
     ai_summary: Optional[str] = Field(None, title="AI assessment of the uploaded image")
+    ai_alignment_status: Optional[str] = Field(None, title="Whether the image aligns with the submitted report")
+    ai_issue_match: Optional[bool] = Field(None, title="Whether the submitted issue type matches the image")
+    ai_detected_issue: Optional[str] = Field(None, title="Issue type most likely shown by the image")
+    ai_confidence: Optional[float] = Field(None, title="Model confidence in the AI assessment")
     status: Optional[str] = Field("pending", title="Report review status")
     reviewed_by: Optional[str] = Field(None, title="Report reviewed by")
     review_notes: Optional[str] = Field(None, title="Review notes")
@@ -64,10 +68,20 @@ class HelpRequest(BaseModel):
     user: str = Field(..., title="User name or email")
     bike_id: str = Field(..., title="Bike identifier")
     notes: Optional[str] = Field(None, title="Optional notes")
+    mission_id: Optional[str] = Field(None, title="Optional return-and-earn mission identifier")
+    location_lat: Optional[float] = Field(None, title="Latitude where the help was completed")
+    location_lng: Optional[float] = Field(None, title="Longitude where the help was completed")
+    location_address: Optional[str] = Field(None, title="Resolved location address")
+    before_image: Optional[str] = Field(None, title="Optional before photo as a data URL")
+    after_image: Optional[str] = Field(None, title="Optional after photo as a data URL")
 
 class RideActivityRequest(BaseModel):
     bike_id: str = Field(..., title="Bike identifier")
     notes: Optional[str] = Field(None, title="Optional notes")
+    location_lat: Optional[float] = Field(None, title="Latitude for this ride or parking event")
+    location_lng: Optional[float] = Field(None, title="Longitude for this ride or parking event")
+    location_accuracy: Optional[float] = Field(None, title="Location accuracy in meters")
+    location_address: Optional[str] = Field(None, title="Resolved location address")
 
 class ScanRentalRequest(BaseModel):
     bike_id: Optional[str] = Field(None, title="Bike identifier from the QR code")
@@ -107,6 +121,15 @@ class AdminAccountUpdateRequest(BaseModel):
     role: Optional[str] = Field(None, title="Updated role")
     password: Optional[str] = Field(None, title="Updated password")
     display_name: Optional[str] = Field(None, title="Updated display name")
+    phone_number: Optional[str] = Field(None, title="Updated phone number")
+
+
+class AdminAccountCreateRequest(BaseModel):
+    user: str = Field(..., title="New account email")
+    role: str = Field("user", title="Role for the new account")
+    password: str = Field(..., title="Initial password")
+    display_name: Optional[str] = Field(None, title="Display name")
+    phone_number: Optional[str] = Field(None, title="Phone number")
 
 
 class StreakResetRequest(BaseModel):
@@ -128,6 +151,20 @@ ROLE_PRIORITY = {"admin": 3, "maintenance": 2, "user": 1}
 STREAK_STEP = 5
 STREAK_BONUS = 0.25
 DUMMY_BIKE_ID = "BK-101"
+SPACE_RECOVERED_PER_BIKE = 1.8
+CORRECTIVE_ACTION_BASE_POINTS = 70
+MISSION_COMPLETION_BONUS = 40
+RECOVERY_ACTION_BONUS = 35
+HOTSPOT_GUIDANCE_RADIUS = 0.0026
+HOTSPOT_CLUSTER_THRESHOLD = 0.0022
+DEMO_LEADERBOARD_PLAYERS = [
+    {"user": "kayla@bikepatrol.test", "display_name": "Kayla Drift", "score": 842, "good_action_streak": 17, "correction_missions_completed": 9, "help_events": 14},
+    {"user": "nabil@bikepatrol.test", "display_name": "Nabil North", "score": 735, "good_action_streak": 13, "correction_missions_completed": 8, "help_events": 12},
+    {"user": "clarice@bikepatrol.test", "display_name": "Clarice Cleanlane", "score": 648, "good_action_streak": 11, "correction_missions_completed": 7, "help_events": 11},
+    {"user": "darren@bikepatrol.test", "display_name": "Darren Dock", "score": 582, "good_action_streak": 10, "correction_missions_completed": 6, "help_events": 10},
+    {"user": "amira@bikepatrol.test", "display_name": "Amira Alley", "score": 503, "good_action_streak": 9, "correction_missions_completed": 5, "help_events": 9},
+    {"user": "josh@bikepatrol.test", "display_name": "Josh Junction", "score": 446, "good_action_streak": 8, "correction_missions_completed": 5, "help_events": 8},
+]
 CSV_DIR = Path(__file__).resolve().parents[1] / "csv"
 REPORT_IMAGES_DIR = CSV_DIR / "report-images"
 REPORTS_CSV_PATH = CSV_DIR / "reports.csv"
@@ -147,6 +184,10 @@ REPORT_CSV_FIELDS = [
     "faulty",
     "image",
     "ai_summary",
+    "ai_alignment_status",
+    "ai_issue_match",
+    "ai_detected_issue",
+    "ai_confidence",
     "status",
     "reviewed_by",
     "review_notes",
@@ -160,7 +201,12 @@ REPORT_CSV_FIELDS = [
 
 def get_llm_token() -> Optional[str]:
     load_env_file()
-    return os.getenv("LLM_TOKEN") or os.getenv("OPENAI_API_KEY")
+    return (os.getenv("API_KEY") or "").strip() or None
+
+
+def get_llm_model() -> str:
+    load_env_file()
+    return (os.getenv("MODEL") or "").strip() or "gpt-4.1-mini"
 
 
 def extract_response_text(payload: dict) -> str:
@@ -175,6 +221,55 @@ def extract_response_text(payload: dict) -> str:
     return ""
 
 
+def normalize_issue_type(issue_type: Optional[str]) -> str:
+    normalized = str(issue_type or "general").strip().lower().replace(" ", "_")
+    if normalized not in {item.value for item in IssueType}:
+        return "general"
+    return normalized
+
+
+def parse_ai_analysis(raw_text: str, submitted_issue_type: str) -> dict:
+    fallback = {
+        "summary": raw_text.strip() if raw_text else None,
+        "alignment_status": "unclear",
+        "issue_match": None,
+        "detected_issue": normalize_issue_type(submitted_issue_type),
+        "confidence": None,
+    }
+    if not raw_text:
+        return fallback
+    try:
+        parsed = json.loads(raw_text)
+    except ValueError:
+        return fallback
+
+    alignment_status = str(parsed.get("alignment_status") or "unclear").strip().lower()
+    if alignment_status not in {"aligned", "issue_mismatch", "not_aligned", "unclear"}:
+        alignment_status = "unclear"
+
+    detected_issue = normalize_issue_type(parsed.get("detected_issue") or submitted_issue_type)
+    issue_match = parsed.get("issue_match")
+    if isinstance(issue_match, str):
+        issue_match = issue_match.strip().lower() == "true"
+    if not isinstance(issue_match, bool):
+        issue_match = None
+
+    confidence = parsed.get("confidence")
+    try:
+        confidence = round(float(confidence), 2) if confidence is not None else None
+    except (TypeError, ValueError):
+        confidence = None
+
+    summary = str(parsed.get("summary") or "").strip() or fallback["summary"]
+    return {
+        "summary": summary,
+        "alignment_status": alignment_status,
+        "issue_match": issue_match,
+        "detected_issue": detected_issue,
+        "confidence": confidence,
+    }
+
+
 def analyze_report_image_with_llm(
     image_data_url: str,
     bike_id: str,
@@ -182,21 +277,30 @@ def analyze_report_image_with_llm(
     description: str,
     location_text: Optional[str] = None,
     location_address: Optional[str] = None,
-) -> Optional[str]:
+) -> Optional[dict]:
     token = get_llm_token()
     if not token:
         return None
+    model = get_llm_model()
 
     prompt = (
-        "Review this bicycle report image and give a short assessment in 1-2 sentences. "
-        "Mention whether the image appears consistent with the report details and note any obvious issue. "
-        "If there is no clear problem, say so clearly. "
+        "You are reviewing a bicycle issue report. "
+        "Return ONLY valid JSON with these keys: "
+        "summary, alignment_status, issue_match, detected_issue, confidence. "
+        "alignment_status must be one of: aligned, issue_mismatch, not_aligned, unclear. "
+        "issue_match must be true or false. "
+        "detected_issue must be one of: illegal_parking, toppled, faulty, general, others. "
+        "confidence must be a number from 0 to 1. "
+        "Use aligned when the image matches the report and the issue type fits. "
+        "Use issue_mismatch when the image shows a real bike problem but the submitted issue type is wrong. "
+        "Use not_aligned when the image does not support the report or appears false. "
+        "Use unclear when the image is too ambiguous. "
         f"Report details: bike_id={bike_id}, issue_type={issue_type}, description={description}."
         + (f" Report location: {location_text}." if location_text else "")
         + (f" Rough address: {location_address}." if location_address else "")
     )
     payload = {
-        "model": "gpt-4.1-mini",
+        "model": model,
         "input": [
             {
                 "role": "user",
@@ -225,7 +329,8 @@ def analyze_report_image_with_llm(
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError):
         return None
 
-    return extract_response_text(response_payload) or None
+    raw_text = extract_response_text(response_payload)
+    return parse_ai_analysis(raw_text, issue_type) if raw_text else None
 
 
 def format_location_text(lat: Optional[float], lng: Optional[float], accuracy: Optional[float]) -> Optional[str]:
@@ -369,12 +474,25 @@ def normalize_report_record(report: dict) -> dict:
     for key in ["location_text", "location_address", "reviewed_by", "review_notes", "review_action", "ai_summary", "image", "image_file", "status", "reporter", "bike_id", "description", "report_id"]:
         if normalized.get(key) == "":
             normalized[key] = None
+    normalized["issue_type"] = normalize_issue_type(normalized.get("issue_type"))
+    if normalized.get("ai_detected_issue") in (None, ""):
+        normalized["ai_detected_issue"] = None
+    else:
+        normalized["ai_detected_issue"] = normalize_issue_type(normalized.get("ai_detected_issue"))
+    if normalized.get("ai_alignment_status") not in {"aligned", "issue_mismatch", "not_aligned", "unclear"}:
+        normalized["ai_alignment_status"] = None
+    issue_match = normalized.get("ai_issue_match")
+    if issue_match in ("", None):
+        normalized["ai_issue_match"] = None
+    else:
+        normalized["ai_issue_match"] = parse_csv_bool(issue_match)
     for key in ["outside_zone", "toppled", "faulty"]:
         normalized[key] = parse_csv_bool(normalized.get(key, False))
     for key in ["reward_granted"]:
         normalized[key] = parse_csv_bool(normalized.get(key, False))
     for key in ["location_lat", "location_lng", "location_accuracy"]:
         normalized[key] = parse_csv_float(normalized.get(key))
+    normalized["ai_confidence"] = parse_csv_float(normalized.get("ai_confidence"))
     normalized["points_awarded"] = parse_csv_int(normalized.get("points_awarded"))
     if not normalized.get("status"):
         normalized["status"] = "pending"
@@ -476,6 +594,11 @@ def ensure_points_fields(account: dict) -> None:
     account.setdefault("active_bike_id", None)
     account.setdefault("rental_history", [])
     account.setdefault("parking_incidents", [])
+    account.setdefault("space_recovered_estimate", 0.0)
+    account.setdefault("correction_missions_completed", 0)
+    account.setdefault("recent_guidance_checks", [])
+    account.setdefault("false_submission_offenses", 0)
+    account.setdefault("false_submission_warning_issued", False)
 
 
 def points_for_report(report: dict) -> int:
@@ -541,7 +664,55 @@ def reset_streak(account: dict, reason: str, action_date: str) -> None:
     })
 
 
-def award_usage_points(account: dict, base_points: int, label: str, action_date: str, history_bucket: str, bike_id: str, notes: Optional[str] = None) -> int:
+def register_false_submission(account: dict, action_date: str) -> tuple[int, str]:
+    ensure_points_fields(account)
+    account["false_submission_offenses"] = int(account.get("false_submission_offenses", 0)) + 1
+    offense_count = account["false_submission_offenses"]
+    if offense_count == 1:
+        account["false_submission_warning_issued"] = True
+        account["points_history"].append({
+            "type": "warning",
+            "label": "False submission warning",
+            "points": 0,
+            "reason": "Image did not align with the submitted report.",
+            "date": action_date,
+        })
+        return offense_count, "This is their first false-submission offense, so they were given a warning."
+
+    reset_streak(account, "Repeated false submission", action_date)
+    account["points_history"].append({
+        "type": "incident",
+        "label": "Repeated false submission",
+        "points": 0,
+        "reason": "Image did not align with the submitted report.",
+        "date": action_date,
+    })
+    return offense_count, "This is a repeat false-submission offense, so their streak was reset."
+
+
+def get_report_reward_base_points(report: dict) -> tuple[int, Optional[str]]:
+    alignment_status = report.get("ai_alignment_status")
+    detected_issue = normalize_issue_type(report.get("ai_detected_issue") or report.get("issue_type"))
+    submitted_issue = normalize_issue_type(report.get("issue_type"))
+    if alignment_status == "issue_mismatch" and detected_issue != submitted_issue:
+        reduced_points = max(int(round(points_for_issue(detected_issue) * 0.65)), 35)
+        return reduced_points, detected_issue
+    return points_for_issue(submitted_issue), None
+
+
+def award_usage_points(
+    account: dict,
+    base_points: int,
+    label: str,
+    action_date: str,
+    history_bucket: str,
+    bike_id: str,
+    notes: Optional[str] = None,
+    location_lat: Optional[float] = None,
+    location_lng: Optional[float] = None,
+    location_accuracy: Optional[float] = None,
+    location_address: Optional[str] = None,
+) -> int:
     ensure_points_fields(account)
     awarded_points = int(base_points)
     account["usage_points_earned"] = int(account.get("usage_points_earned", 0)) + awarded_points
@@ -552,6 +723,10 @@ def award_usage_points(account: dict, base_points: int, label: str, action_date:
         "notes": notes or "",
         "date": action_date,
         "label": label,
+        "location_lat": location_lat,
+        "location_lng": location_lng,
+        "location_accuracy": location_accuracy,
+        "location_address": location_address,
     }
     account.setdefault(history_bucket, []).append(event)
     account["points_history"].append({
@@ -710,7 +885,307 @@ def build_user_summary(user: str):
         "recent_parking_history": account.get("parking_history", [])[-10:],
         "active_bike_id": account.get("active_bike_id"),
         "parking_incidents": account.get("parking_incidents", [])[-10:],
+        "space_recovered_estimate": round(float(account.get("space_recovered_estimate", 0.0)), 1),
+        "correction_missions_completed": int(account.get("correction_missions_completed", 0)),
+        "false_submission_offenses": int(account.get("false_submission_offenses", 0)),
     }
+
+
+def build_admin_overview() -> dict:
+    accounts = [get_user_account(user_key) for user_key in PROXY_USERS.keys()]
+    user_accounts = [account for account in accounts if account["role"] == "user"]
+    maintenance_accounts = [account for account in accounts if account["role"] == "maintenance"]
+    accounts_needing_attention = [
+        account for account in user_accounts
+        if int(account.get("false_submission_offenses", 0)) > 0
+        or len(account.get("parking_incidents", [])) > 0
+        or int(account.get("good_action_streak", 0)) == 0
+    ]
+    top_contributor = None
+    if user_accounts:
+        ranked_users = sorted(
+            user_accounts,
+            key=lambda account: (
+                int(account.get("help_points_earned", 0)) + int(account.get("report_points_earned", 0)),
+                int(account.get("good_action_streak", 0)),
+            ),
+            reverse=True,
+        )
+        leader = ranked_users[0]
+        top_contributor = {
+            "user": leader["user"],
+            "display_name": leader.get("display_name") or leader["user"],
+            "points_balance": int(leader.get("points_balance", 0)),
+            "good_action_streak": int(leader.get("good_action_streak", 0)),
+        }
+
+    return {
+        "total_accounts": len(accounts),
+        "user_accounts": len(user_accounts),
+        "maintenance_accounts": len(maintenance_accounts),
+        "pending_reports": len([report for report in REPORTS if report.get("status", "pending") == "pending"]),
+        "accounts_needing_attention": len(accounts_needing_attention),
+        "top_contributor": top_contributor,
+    }
+
+
+def build_admin_account_snapshot(user_key: str) -> dict:
+    account = get_user_account(user_key)
+    sync_user_points_state(account)
+    recent_reports = [report for report in REPORTS if report.get("reporter", "").lower() == user_key.lower()]
+    parking_incidents = account.get("parking_incidents", [])
+    false_submission_offenses = int(account.get("false_submission_offenses", 0))
+    needs_attention = (
+        false_submission_offenses > 0
+        or len(parking_incidents) > 0
+        or str(account.get("active_bike_id") or "").strip() != ""
+    )
+    return {
+        "user": account.get("user", user_key),
+        "role": account.get("role", "user"),
+        "display_name": account.get("display_name", user_key),
+        "phone_number": account.get("phone_number", ""),
+        "points_balance": int(account.get("points_balance", 0)),
+        "lifetime_points": int(account.get("lifetime_points", 0)),
+        "good_action_streak": int(account.get("good_action_streak", 0)),
+        "streak_multiplier": float(account.get("streak_multiplier", 1.0)),
+        "helpful_actions": len(account.get("help_events", [])),
+        "correction_missions_completed": int(account.get("correction_missions_completed", 0)),
+        "false_submission_offenses": false_submission_offenses,
+        "parking_incident_count": len(parking_incidents),
+        "active_bike_id": account.get("active_bike_id"),
+        "recent_report_count": len(recent_reports),
+        "last_report_issue": recent_reports[-1].get("issue_type") if recent_reports else None,
+        "needs_attention": needs_attention,
+    }
+
+
+def is_report_open_for_action(report: dict) -> bool:
+    return report.get("status", "pending") != "completed"
+
+
+def get_issue_weight(issue_type: Optional[str]) -> float:
+    if issue_type == "toppled":
+        return 3.0
+    if issue_type == "faulty":
+        return 2.6
+    if issue_type == "illegal_parking":
+        return 2.2
+    return 1.6
+
+
+def cluster_reports(reports: List[dict]) -> List[dict]:
+    mapped_reports = [
+        report for report in reports
+        if isinstance(report.get("location_lat"), (int, float)) and isinstance(report.get("location_lng"), (int, float))
+    ]
+    clusters: List[dict] = []
+
+    for report in mapped_reports:
+        lat = float(report["location_lat"])
+        lng = float(report["location_lng"])
+        score = get_issue_weight(report.get("issue_type")) + (0.8 if is_report_open_for_action(report) else 0.2)
+        cluster = next((
+            item for item in clusters
+            if ((item["lat"] / item["count"]) - lat) ** 2 + ((item["lng"] / item["count"]) - lng) ** 2 <= HOTSPOT_CLUSTER_THRESHOLD ** 2
+        ), None)
+
+        if not cluster:
+            cluster = {
+                "id": f"hotspot-{len(clusters) + 1}",
+                "lat": 0.0,
+                "lng": 0.0,
+                "count": 0,
+                "score": 0.0,
+                "pending": 0,
+                "completed": 0,
+                "issue_counts": {},
+                "sample_address": report.get("location_address") or report.get("location_text") or None,
+                "reports": [],
+            }
+            clusters.append(cluster)
+
+        cluster["lat"] += lat
+        cluster["lng"] += lng
+        cluster["count"] += 1
+        cluster["score"] += score
+        cluster["pending"] += 1 if is_report_open_for_action(report) else 0
+        cluster["completed"] += 0 if is_report_open_for_action(report) else 1
+        issue_type = report.get("issue_type") or "general"
+        cluster["issue_counts"][issue_type] = cluster["issue_counts"].get(issue_type, 0) + 1
+        if not cluster["sample_address"] and (report.get("location_address") or report.get("location_text")):
+            cluster["sample_address"] = report.get("location_address") or report.get("location_text")
+        cluster["reports"].append(report)
+
+    shaped = []
+    for index, cluster in enumerate(clusters, start=1):
+        top_issue = sorted(cluster["issue_counts"].items(), key=lambda item: item[1], reverse=True)[0][0] if cluster["issue_counts"] else "general"
+        shaped.append({
+            "id": cluster["id"],
+            "index": index,
+            "lat": cluster["lat"] / cluster["count"],
+            "lng": cluster["lng"] / cluster["count"],
+            "count": cluster["count"],
+            "score": cluster["score"],
+            "pending": cluster["pending"],
+            "completed": cluster["completed"],
+            "top_issue": top_issue,
+            "severity": "high" if cluster["score"] >= 8 else "medium" if cluster["score"] >= 4 else "low",
+            "title": cluster["sample_address"] or f"Hotspot {index}",
+            "reports": cluster["reports"],
+        })
+
+    return sorted(shaped, key=lambda item: item["score"], reverse=True)
+
+
+def build_priority_routes(hotspots: List[dict]) -> List[dict]:
+    routes = []
+    for hotspot in hotspots[:5]:
+        repeat_offender_pressure = sum(1 for report in hotspot["reports"] if report.get("issue_type") == "illegal_parking")
+        public_space_impact = hotspot["count"] * 2 + hotspot["pending"] * 3 + repeat_offender_pressure * 2
+        routes.append({
+            "id": hotspot["id"],
+            "title": hotspot["title"],
+            "severity": hotspot["severity"],
+            "priority_score": round(hotspot["score"] + public_space_impact, 1),
+            "issue_type": hotspot["top_issue"],
+            "recommended_action": (
+                f"Clear {hotspot['title']} first to recover space and reduce repeat {str(hotspot['top_issue']).replace('_', ' ')} cases."
+            ),
+            "estimated_bikes": hotspot["count"],
+            "public_space_impact": public_space_impact,
+        })
+    return sorted(routes, key=lambda item: item["priority_score"], reverse=True)
+
+
+def distance_between(lat_a: float, lng_a: float, lat_b: float, lng_b: float) -> float:
+    return ((lat_a - lat_b) ** 2 + (lng_a - lng_b) ** 2) ** 0.5
+
+
+def build_parking_guidance(lat: Optional[float], lng: Optional[float], hotspots: List[dict]) -> dict:
+    if lat is None or lng is None or not hotspots:
+        return {
+            "zone": "good",
+            "headline": "No congestion warning right now.",
+            "message": "You are clear to park responsibly and keep your streak moving.",
+            "points_tip": "Proper parking still earns points, but corrective actions earn even more.",
+        }
+
+    nearest = min(hotspots, key=lambda hotspot: distance_between(lat, lng, hotspot["lat"], hotspot["lng"]))
+    proximity = distance_between(lat, lng, nearest["lat"], nearest["lng"])
+    hotspot_issue = str(nearest.get("top_issue") or "general").replace("_", " ")
+
+    if nearest["severity"] == "high" and proximity <= HOTSPOT_GUIDANCE_RADIUS:
+        return {
+            "zone": "bad",
+            "headline": "High clutter risk nearby.",
+            "message": f"This area often gets flagged for {hotspot_issue}. Move the bike into a proper zone to protect your streak and keep walkways clear.",
+            "points_tip": "A safer parking spot now is better than having to recover your streak later.",
+            "hotspot_title": nearest["title"],
+        }
+    if proximity <= HOTSPOT_GUIDANCE_RADIUS * 1.8:
+        return {
+            "zone": "risky",
+            "headline": "Busy parking area ahead.",
+            "message": f"Reports are clustering near {nearest['title']}. Double-check your bike position before ending the ride.",
+            "points_tip": "Good parking helps, and nearby return-and-earn missions can boost your points even more.",
+            "hotspot_title": nearest["title"],
+        }
+    return {
+        "zone": "good",
+        "headline": "Good parking zone.",
+        "message": "This area has low recent clutter pressure. Park neatly to keep the space usable for everyone.",
+        "points_tip": "You can still earn extra by picking up a nearby return-and-earn mission.",
+        "hotspot_title": nearest["title"],
+    }
+
+
+def build_return_missions(user: str) -> List[dict]:
+    user_key = user.lower().strip()
+    account = get_user_account(user_key)
+    hotspots = cluster_reports(REPORTS)
+    incident_count = len(account.get("parking_incidents", []))
+    recovery_boost = RECOVERY_ACTION_BONUS if incident_count else 0
+    missions = []
+
+    for hotspot in hotspots:
+        if hotspot["top_issue"] != "illegal_parking":
+            continue
+        open_reports = [
+            report for report in hotspot["reports"]
+            if report.get("issue_type") == "illegal_parking" and is_report_open_for_action(report)
+        ]
+        if not open_reports:
+            continue
+        missions.append({
+            "id": f"mission-{hotspot['id']}",
+            "hotspot_id": hotspot["id"],
+            "title": f"Return bikes near {hotspot['title']}",
+            "headline": "Return-and-earn mission",
+            "description": "Help move misplaced bikes back into proper parking and unlock a bigger point reward than a normal ride.",
+            "encouragement": "This is your chance to earn more points while freeing up shared space.",
+            "issue_type": hotspot["top_issue"],
+            "severity": hotspot["severity"],
+            "location_title": hotspot["title"],
+            "bike_ids": [report.get("bike_id") for report in open_reports[:3]],
+            "estimated_bikes": hotspot["count"],
+            "reward_points": CORRECTIVE_ACTION_BASE_POINTS + recovery_boost,
+            "bonus_points": MISSION_COMPLETION_BONUS + recovery_boost,
+            "recovery_boost": recovery_boost,
+            "before_after_required": True,
+        })
+        if len(missions) >= 5:
+            break
+
+    return missions
+
+
+def build_space_recovery_metrics() -> dict:
+    corrected_events = []
+    for account in USER_ACCOUNTS.values():
+        ensure_points_fields(account)
+        corrected_events.extend([
+            event for event in account.get("help_events", [])
+            if event.get("mission_id") or str(event.get("label") or "").lower().startswith("return-and-earn")
+        ])
+
+    recovered_bikes = len(corrected_events)
+    recovered_space = round(recovered_bikes * SPACE_RECOVERED_PER_BIKE, 1)
+    hotspots = cluster_reports(REPORTS)
+    illegal_hotspots = [hotspot for hotspot in hotspots if hotspot["top_issue"] == "illegal_parking"]
+    return {
+        "bikes_reparked": recovered_bikes,
+        "space_recovered_m2": recovered_space,
+        "clutter_hotspots": len(illegal_hotspots),
+        "blocked_space_cleared_estimate": round(recovered_space * 0.65, 1),
+    }
+
+
+def build_leaderboard() -> List[dict]:
+    leaders = []
+    for user_key, proxy in PROXY_USERS.items():
+        if proxy.get("role") != "user":
+            continue
+        account = get_user_account(user_key)
+        sync_user_points_state(account)
+        missions_completed = int(account.get("correction_missions_completed", 0))
+        help_events = len(account.get("help_events", []))
+        score = int(account.get("help_points_earned", 0)) + missions_completed * 60 + int(account.get("good_action_streak", 0)) * 8
+        leaders.append({
+            "user": account["user"],
+            "display_name": account.get("display_name") or account["user"],
+            "score": score,
+            "good_action_streak": int(account.get("good_action_streak", 0)),
+            "space_recovered_estimate": round(float(account.get("space_recovered_estimate", 0.0)), 1),
+            "correction_missions_completed": missions_completed,
+            "help_events": help_events,
+        })
+    existing_users = {str(leader["user"]).lower() for leader in leaders}
+    for demo_player in DEMO_LEADERBOARD_PLAYERS:
+        if demo_player["user"].lower() in existing_users:
+            continue
+        leaders.append(dict(demo_player))
+    return sorted(leaders, key=lambda item: (-item["score"], item["display_name"].lower()))[:8]
 
 @app.get("/api/status")
 def status():
@@ -795,7 +1270,7 @@ def submit_report(
     
     normalized_location_text = location_text or format_location_text(location_lat, location_lng, location_accuracy)
     normalized_location_address = location_address or build_location_address(location_lat, location_lng, location_accuracy)
-    ai_summary = analyze_report_image_with_llm(
+    ai_analysis = analyze_report_image_with_llm(
         image_data,
         bike_id,
         issue_type,
@@ -803,12 +1278,13 @@ def submit_report(
         normalized_location_text,
         normalized_location_address,
     )
+    ai_summary = ai_analysis.get("summary") if ai_analysis else None
     
     report_dict = {
         "report_id": report_id,
         "reporter": submitted_by,
         "bike_id": bike_id,
-        "issue_type": issue_type,
+        "issue_type": normalize_issue_type(issue_type),
         "description": description,
         "location_text": normalized_location_text,
         "location_address": normalized_location_address,
@@ -821,6 +1297,10 @@ def submit_report(
         "image": image_data,
         "image_file": image_file,
         "ai_summary": ai_summary,
+        "ai_alignment_status": ai_analysis.get("alignment_status") if ai_analysis else None,
+        "ai_issue_match": ai_analysis.get("issue_match") if ai_analysis else None,
+        "ai_detected_issue": ai_analysis.get("detected_issue") if ai_analysis else None,
+        "ai_confidence": ai_analysis.get("confidence") if ai_analysis else None,
         "status": "pending",
         "reviewed_by": None,
         "review_notes": None,
@@ -877,24 +1357,45 @@ def review_report(
     report["review_notes"] = (notes or "").strip() or None
     report["review_action"] = normalized_action
     award_message = ""
+    ai_alignment_status = report.get("ai_alignment_status")
+    ai_detected_issue = normalize_issue_type(report.get("ai_detected_issue") or report.get("issue_type"))
+    submitted_issue = normalize_issue_type(report.get("issue_type"))
+    review_date = date.today().isoformat()
+
+    if normalized_action == "reject" and ai_alignment_status == "not_aligned":
+        reporter_account = get_user_account(report["reporter"])
+        offense_count, warning_message = register_false_submission(reporter_account, review_date)
+        award_message = f" {warning_message} False-submission offense count: {offense_count}."
+
     if normalized_action == "approve" and not report.get("reward_granted"):
         reporter_account = get_user_account(report["reporter"])
         report["reward_granted"] = True
         report["reward_voucher"] = None
+        base_points, corrected_issue = get_report_reward_base_points(report)
+        confirmed_issue = corrected_issue or submitted_issue
+        reward_label = f"{format_location_text(report.get('location_lat'), report.get('location_lng'), report.get('location_accuracy')) or 'Verified report'} approved"
+        if corrected_issue:
+            reward_label = f"{reward_label} (retagged as {corrected_issue.replace('_', ' ')})"
         awarded_points, multiplier, streak_count = award_points_for_good_action(
             reporter_account,
-            points_for_issue(report.get("issue_type")),
-            f"{format_location_text(report.get('location_lat'), report.get('location_lng'), report.get('location_accuracy')) or 'Verified report'} approved",
-            date.today().isoformat(),
+            base_points,
+            reward_label,
+            review_date,
             "report_points_earned",
         )
         report["points_awarded"] = awarded_points
         award_message = f" {report['points_awarded']} points added with a {multiplier:.2f}x streak multiplier."
-        if report.get("issue_type") == "illegal_parking":
+        if corrected_issue and corrected_issue != submitted_issue:
+            mismatch_note = (
+                f" AI suggests this looked more like {corrected_issue.replace('_', ' ')} than {submitted_issue.replace('_', ' ')}."
+            )
+            report["review_notes"] = f"{report['review_notes']} {mismatch_note}".strip() if report.get("review_notes") else mismatch_note.strip()
+            award_message += f" Maintenance was informed that the image looks more like {corrected_issue.replace('_', ' ')} than {submitted_issue.replace('_', ' ')}, so the user received reduced points."
+        if confirmed_issue == "illegal_parking":
             flagged_account = flag_illegal_parking_for_bike(
                 report["bike_id"],
                 "Illegal parking confirmed by maintenance review",
-                date.today().isoformat(),
+                review_date,
             )
             if flagged_account:
                 award_message += f" The linked renter {flagged_account['user']} had their streak reset."
@@ -910,27 +1411,57 @@ def review_report(
 def parking_help(help_request: HelpRequest):
     account = get_user_account(help_request.user)
     today = date.today().isoformat()
+    mission_id = (help_request.mission_id or "").strip() or None
+    is_corrective_mission = bool(mission_id)
+    latest_incident = account.get("parking_incidents", [])[-1] if account.get("parking_incidents") else None
+    recovery_bonus = RECOVERY_ACTION_BONUS if latest_incident else 0
+    base_points = CORRECTIVE_ACTION_BASE_POINTS if is_corrective_mission else 25
+    bonus_points = MISSION_COMPLETION_BONUS if is_corrective_mission else 0
+    total_base_points = base_points + bonus_points + recovery_bonus
+    guidance = build_parking_guidance(
+        help_request.location_lat,
+        help_request.location_lng,
+        cluster_reports(REPORTS),
+    )
     event = {
         "bike_id": help_request.bike_id,
         "notes": help_request.notes or "Helped keep the bicycle inside the assigned parking spot.",
         "date": today,
-        "base_points": 25,
+        "base_points": total_base_points,
+        "mission_id": mission_id,
+        "label": "Return-and-earn mission" if is_corrective_mission else "Parking help bonus",
+        "location_lat": help_request.location_lat,
+        "location_lng": help_request.location_lng,
+        "location_address": help_request.location_address,
+        "before_image": help_request.before_image,
+        "after_image": help_request.after_image,
+        "bonus_points": bonus_points,
+        "recovery_bonus": recovery_bonus,
+        "guidance_zone": guidance["zone"],
     }
     account["help_events"].append(event)
     awarded_points, multiplier, streak_count = award_points_for_good_action(
         account,
         event["base_points"],
-        "Parking help bonus",
+        event["label"],
         today,
         "help_points_earned",
     )
     event["points"] = awarded_points
     event["multiplier"] = multiplier
     event["streak"] = streak_count
+    account["space_recovered_estimate"] = round(float(account.get("space_recovered_estimate", 0.0)) + SPACE_RECOVERED_PER_BIKE, 1)
+    if is_corrective_mission:
+        account["correction_missions_completed"] = int(account.get("correction_missions_completed", 0)) + 1
     return {
-        "message": f"Parking help logged. You earned {awarded_points} points with a {multiplier:.2f}x multiplier.",
+        "message": (
+            f"Parking help logged. You earned {awarded_points} points with a {multiplier:.2f}x multiplier."
+            if not is_corrective_mission
+            else f"Mission completed. You earned {awarded_points} points with a {multiplier:.2f}x multiplier."
+        ),
         "points_balance": account["points_balance"],
         "help_event": event,
+        "space_recovered_estimate": round(float(account.get("space_recovered_estimate", 0.0)), 1),
     }
 
 
@@ -949,6 +1480,10 @@ def log_ride_activity(request: RideActivityRequest, authorization: Optional[str]
         "ride_history",
         bike_id,
         request.notes or "Completed a bicycle rental trip.",
+        request.location_lat,
+        request.location_lng,
+        request.location_accuracy,
+        request.location_address,
     )
     account.setdefault("rental_history", []).append({
         "bike_id": bike_id,
@@ -956,11 +1491,23 @@ def log_ride_activity(request: RideActivityRequest, authorization: Optional[str]
         "notes": request.notes or "Bike linked through ride logging.",
         "method": "ride-log",
     })
+    guidance = build_parking_guidance(
+        request.location_lat,
+        request.location_lng,
+        cluster_reports(REPORTS),
+    )
+    account.setdefault("recent_guidance_checks", []).append({
+        "date": today,
+        "zone": guidance["zone"],
+        "headline": guidance["headline"],
+        "bike_id": bike_id,
+    })
     return {
         "message": f"Ride logged. You earned {awarded_points} usage points.",
         "points_balance": account["points_balance"],
         "active_bike_id": account["active_bike_id"],
         "ride_history": account.get("ride_history", [])[-10:],
+        "parking_guidance": guidance,
     }
 
 
@@ -970,6 +1517,11 @@ def log_parking_activity(request: RideActivityRequest, authorization: Optional[s
     account = get_user_account(current_user_key)
     today = date.today().isoformat()
     bike_id = request.bike_id.strip().upper()
+    guidance = build_parking_guidance(
+        request.location_lat,
+        request.location_lng,
+        cluster_reports(REPORTS),
+    )
     awarded_points = award_usage_points(
         account,
         15,
@@ -978,14 +1530,25 @@ def log_parking_activity(request: RideActivityRequest, authorization: Optional[s
         "parking_history",
         bike_id,
         request.notes or "Returned and parked the bicycle responsibly.",
+        request.location_lat,
+        request.location_lng,
+        request.location_accuracy,
+        request.location_address,
     )
     if str(account.get("active_bike_id") or "").strip().upper() == bike_id:
         account["active_bike_id"] = None
+    account.setdefault("recent_guidance_checks", []).append({
+        "date": today,
+        "zone": guidance["zone"],
+        "headline": guidance["headline"],
+        "bike_id": bike_id,
+    })
     return {
         "message": f"Parking logged. You earned {awarded_points} usage points.",
         "points_balance": account["points_balance"],
         "active_bike_id": account.get("active_bike_id"),
         "parking_history": account.get("parking_history", [])[-10:],
+        "parking_guidance": guidance,
     }
 
 
@@ -1185,18 +1748,48 @@ def admin_accounts(authorization: Optional[str] = Header(None)):
 
     accounts = []
     for user_key, info in PROXY_USERS.items():
-        account = get_user_account(user_key)
-        accounts.append({
-            "user": account.get("user", user_key),
-            "role": info["role"],
-            "display_name": account.get("display_name", user_key),
-            "phone_number": account.get("phone_number", ""),
-            "good_action_streak": account.get("good_action_streak", 0),
-            "streak_multiplier": account.get("streak_multiplier", 1.0),
-        })
+        account = build_admin_account_snapshot(user_key)
+        account["role"] = info["role"]
+        accounts.append(account)
 
     return {
+        "overview": build_admin_overview(),
         "accounts": sorted(accounts, key=lambda item: (ROLE_PRIORITY.get(item["role"], 0) * -1, item["user"].lower()))
+    }
+
+
+@app.post("/api/admin/accounts/create")
+def admin_create_account(request: AdminAccountCreateRequest, authorization: Optional[str] = Header(None)):
+    current_user_key = validate_session_token(authorization)
+    current_account = get_user_account(current_user_key)
+    if current_account["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can create accounts.")
+
+    target_user = (request.user or "").strip()
+    target_password = (request.password or "").strip()
+    target_role = (request.role or "user").strip().lower()
+    if not target_user:
+        raise HTTPException(status_code=400, detail="Email cannot be empty.")
+    if not target_password:
+        raise HTTPException(status_code=400, detail="Password cannot be empty.")
+    if target_role not in {"user", "maintenance"}:
+        raise HTTPException(status_code=400, detail="Role must be user or maintenance.")
+
+    user_key = target_user.lower()
+    if user_key in PROXY_USERS:
+        raise HTTPException(status_code=400, detail="That account already exists.")
+
+    PROXY_USERS[user_key] = {"password": target_password, "role": target_role}
+    account = get_user_account(user_key)
+    account["user"] = target_user
+    account["role"] = target_role
+    account["display_name"] = (request.display_name or target_user).strip() or target_user
+    account["phone_number"] = (request.phone_number or "").strip()
+
+    return {
+        "message": "Account created successfully.",
+        "account": build_admin_account_snapshot(user_key),
+        "overview": build_admin_overview(),
     }
 
 @app.post("/api/admin/accounts/{user}/update")
@@ -1229,16 +1822,13 @@ def admin_update_account(user: str, request: AdminAccountUpdateRequest, authoriz
     if account and request.display_name is not None:
         next_display_name = request.display_name.strip()
         account["display_name"] = next_display_name or account.get("display_name") or account.get("user", user)
+    if account and request.phone_number is not None:
+        account["phone_number"] = request.phone_number.strip()
 
     refreshed_account = get_user_account(account["user"] if account else user)
     return {
         "message": "Account updated successfully.",
-        "account": {
-            "user": refreshed_account["user"],
-            "role": refreshed_account["role"],
-            "display_name": refreshed_account.get("display_name", refreshed_account["user"]),
-            "phone_number": refreshed_account.get("phone_number", ""),
-        },
+        "account": build_admin_account_snapshot(target_user_key),
     }
 
 
@@ -1324,6 +1914,29 @@ def use_reward(request: UseRewardRequest, authorization: Optional[str] = Header(
 def reward_status(user: str):
     account = get_user_account(user)
     sync_user_points_state(account)
+    hotspots = cluster_reports(REPORTS)
+    missions = build_return_missions(user)
+    space_metrics = build_space_recovery_metrics()
+    leaderboard = build_leaderboard()
+    priority_routes = build_priority_routes(hotspots)
+    latest_parking = account.get("parking_history", [])[-1] if account.get("parking_history") else None
+    latest_guidance = build_parking_guidance(
+        latest_parking.get("location_lat") if latest_parking else None,
+        latest_parking.get("location_lng") if latest_parking else None,
+        hotspots,
+    )
+    hotspot_alert = next((hotspot for hotspot in hotspots if hotspot["severity"] == "high"), hotspots[0] if hotspots else None)
+    recovery_status = {
+        "has_recent_incident": bool(account.get("parking_incidents")),
+        "headline": "Keep the streak going with community parking saves.",
+        "message": "Helpful actions build your multiplier faster than normal rides and make the town feel tidier.",
+    }
+    if account.get("parking_incidents"):
+        recovery_status = {
+            "has_recent_incident": True,
+            "headline": "You can rebuild quickly.",
+            "message": "A recent parking incident reset your streak, but return-and-earn missions and clean parking can boost you back fast.",
+        }
     return {
         "user": user,
         "points_balance": account["points_balance"],
@@ -1339,4 +1952,27 @@ def reward_status(user: str):
         "parking_history": account.get("parking_history", [])[-10:],
         "active_bike_id": account.get("active_bike_id"),
         "parking_incidents": account.get("parking_incidents", [])[-10:],
+        "false_submission_offenses": int(account.get("false_submission_offenses", 0)),
+        "missions": missions,
+        "parking_guidance": latest_guidance,
+        "hotspot_alert": {
+            "active": bool(hotspot_alert),
+            "title": hotspot_alert["title"] if hotspot_alert else None,
+            "severity": hotspot_alert["severity"] if hotspot_alert else None,
+            "message": (
+                f"Illegal parking is clustering near {hotspot_alert['title']}. This is your chance to earn more points by helping."
+                if hotspot_alert and hotspot_alert["top_issue"] == "illegal_parking"
+                else f"Community issue pressure is rising near {hotspot_alert['title']}."
+                if hotspot_alert else "No major congestion hotspot right now."
+            ),
+        },
+        "space_metrics": space_metrics,
+        "leaderboard": leaderboard,
+        "priority_routes": priority_routes,
+        "recovery_status": recovery_status,
+        "community_impact": {
+            "space_recovered_estimate": round(float(account.get("space_recovered_estimate", 0.0)), 1),
+            "correction_missions_completed": int(account.get("correction_missions_completed", 0)),
+            "helpful_actions": len(account.get("help_events", [])),
+        },
     }
